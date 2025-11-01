@@ -35,10 +35,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    // JWT 라이브러리 (jjwt)
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3' // (JSON 처리를 위해)
+	// ======== [JWT 라이브러리 추가] ========
+	// 1. jjwt-api: JWT를 위한 인터페이스(API)
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+	// 2. jjwt-impl: JWT 인터페이스의 구현체
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+	// 3. jjwt-jackson: JWT의 JSON 파싱을 위한 Jackson 지원
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+	// ======================================
 }
 
 tasks.named('test') {
