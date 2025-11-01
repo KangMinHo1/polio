@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>피드백 사이트 - 설정</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/settings.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+  <main class="main">
+    <div class="container">
+      <div class="page-header">
+        <h1>설정</h1>
+        <p>계정 및 앱 설정을 관리하세요</p>
+      </div>
+
+      <div class="settings-container">
+          <section class="settings-section card">
+            <div class="card-header"><h3 class="card-title">앱 설정</h3></div>
+            <div class="card-content">
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h4>🎨 테마 설정</h4>
+                  <p>어두운 테마(다크 모드)로 전환합니다.</p>
+                </div>
+                <label class="switch">
+                  <input id="dark-mode-toggle" type="checkbox" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-section card">
+            <div class="card-header"><h3 class="card-title">계정 관리</h3></div>
+            <div class="card-content">
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h4>내 활동</h4>
+                  <p>내가 작성한 피드백 요청을 모두 확인합니다.</p>
+                </div>
+                <a class="btn btn--ghost" id="my-posts-button" href="#">내 요청글 보기</a>
+              </div>
+              <hr class="setting-divider">
+              <div class="setting-item">
+                <div class="setting-info">
+                  <h4>로그아웃</h4>
+                  <p>현재 계정에서 로그아웃합니다.</p>
+                </div>
+                <button class="btn btn--ghost" id="logout-button">로그아웃</button>
+              </div>
+               <hr class="setting-divider">
+              <div class="setting-item setting-item--danger">
+                <div class="setting-info">
+                  <h4>회원 탈퇴</h4>
+                  <p>계정을 영구적으로 삭제합니다. 이 작업은 되돌릴 수 없습니다.</p>
+                </div>
+                <button class="btn btn--danger" id="delete-account-button">회원 탈퇴</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-section card">
+            <div class="card-header"><h3 class="card-title">🔑 비밀번호 변경</h3></div>
+            <form id="password-change-form" class="card-content settings-form">
+              <div class="form-group">
+                <label for="current-password">현재 비밀번호</label>
+                <div class="password-input-wrapper">
+                  <input type="password" id="current-password" required />
+                  <span class="password-toggle-icon" title="비밀번호 보기/숨기기">👁️</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="new-password">새 비밀번호</label>
+                <div class="password-input-wrapper">
+                  <input type="password" id="new-password" required />
+                  <span class="password-toggle-icon" title="비밀번호 보기/숨기기">👁️</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="confirm-password">새 비밀번호 확인</label>
+                <div class="password-input-wrapper">
+                  <input type="password" id="confirm-password" required />
+                  <span class="password-toggle-icon" title="비밀번호 보기/숨기기">👁️</span>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn--primary">비밀번호 변경</button>
+              </div>
+            </form>
+          </section>
+
+      </div> </div>
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="js/shared.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/settings.js"></script>
+</body>
+</html>

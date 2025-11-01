@@ -1,0 +1,119 @@
+/* admin.html specific styles */
+
+/* 통계 카드 */
+.stats-card .card-content { padding-top: 1.5rem; }
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 기본 2열 */
+    gap: 1.5rem;
+}
+.stats-grid .stat-item {
+    background-color: var(--bg-secondary);
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+.stats-grid .stat-item-full {
+    grid-column: 1 / -1; /* 카테고리 통계는 전체 너비 사용 */
+    text-align: left;
+}
+.stats-grid .stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: 0.25rem;
+}
+.stats-grid .stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.category-stats-list {
+    list-style: none;
+    padding: 0; margin: 0.5rem 0 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+}
+.category-stats-list li {
+    font-size: 0.9rem;
+    background-color: var(--bg-tertiary);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+}
+.category-stats-list .category-name {
+    color: var(--text-secondary);
+    margin-right: 0.25rem;
+}
+.category-stats-list .category-count {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+:root.dark .stats-grid .stat-item { background-color: var(--bg-tertiary); }
+:root.dark .category-stats-list li { background-color: var(--bg-secondary); }
+
+
+/* 관리 목록 공통 */
+.management-list {
+    padding: 0; /* ul 기본 패딩 제거 */
+}
+.list-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+.list-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.card-content > .management-list > .list-item:first-child {
+    padding-top: 0; /* 카드 내부 첫 항목 위 패딩 제거 */
+}
+
+.item-info .item-title {
+    font-weight: 500; /* 제목 굵기 살짝 줄임 */
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+}
+.item-info .item-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0; /* 액션 버튼 영역 줄어들지 않도록 */
+}
+.item-actions .select {
+    padding: 0.4rem 0.8rem; /* select 크기 살짝 줄임 */
+    font-size: 0.85rem;
+}
+.item-actions .btn {
+    padding: 0.4rem 0.8rem; /* 버튼 크기 살짝 줄임 */
+    font-size: 0.85rem;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr; /* 통계 작은 화면에서 1열 */
+    }
+    .list-item {
+        flex-direction: column; /* 목록 작은 화면에서 세로 정렬 */
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    .item-actions {
+        margin-left: auto; /* 버튼 오른쪽으로 */
+    }
+}

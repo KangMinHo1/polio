@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>피드백 사이트 - 사용자 프로필</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/profile.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="main">
+        <div class="container">
+            <div class="profile-header card">
+                <div class="profile-info">
+                    <h1 id="profile-user-id">사용자 ID</h1>
+                    <div>
+                        <span id="profile-user-category" class="profile-category-badge">카테고리</span>
+                        <span id="profile-user-badge" class="profile-trust-badge" style="display: none;"></span>
+                    </div>
+                    <div id="mentor-status-toggle-area" style="display: none; margin-top: 1rem;">
+                        <label class="switch-label">
+                            <span class="switch-text">피드백 가능 상태 (2시간)</span>
+                            <label class="switch">
+                                <input id="mentor-status-toggle" type="checkbox" />
+                                <span class="slider"></span>
+                            </label>
+                        </label>
+                    </div>
+                </div>
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="profile-mentor-count">0</span>
+                        <span class="stat-label">🚀 취업시킨 멘토</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="profile-best-count">0</span>
+                        <span class="stat-label">🏆 베스트 피드백</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="profile-upvote-count">0</span>
+                        <span class="stat-label">👍 받은 도움됨</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="profile-insight-count">0</span>
+                        <span class="stat-label">💡 받은 인사이트</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-activity">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">📝 작성한 글</h2></div>
+                    <div class="card-content">
+                        <ul id="profile-posts-list" class="post-list profile-list">
+                            <li>요청글을 불러오는 중...</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">💬 남긴 댓글</h2></div>
+                    <div class="card-content">
+                        <ul id="profile-comments-list" class="post-list profile-list">
+                            <li>댓글을 불러오는 중...</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card" id="bookmark-card">
+                    <div class="card-header"><h2 class="card-title">📌 내 스크랩북</h2></div>
+                    <div class="card-content">
+                        <ul id="profile-bookmarks-list" class="post-list profile-list">
+                            <li>스크랩한 글을 불러오는 중...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="js/shared.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/profile.js"></script>
+</body>
+</html><!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>피드백 사이트 - 사용자 프로필</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/profile.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="main">
+        <div class="container">
+            <div class="profile-header card">
+                <div class="profile-info">
+                    <h1 id="profile-user-id">사용자 ID</h1>
+                    <div>
+                        <span id="profile-user-category" class="profile-category-badge">카테고리</span>
+                        <span id="profile-user-badge" class="profile-trust-badge" style="display: none;"></span>
+                    </div>
+                    <div id="mentor-status-toggle-area" style="display: none; margin-top: 1rem;">
+                        <label class="switch-label">
+                            <span class="switch-text">피드백 가능 상태 (2시간)</span>
+                            <label class="switch">
+                                <input id="mentor-status-toggle" type="checkbox" />
+                                <span class="slider"></span>
+                            </label>
+                        </label>
+                    </div>
+                </div>
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="profile-mentor-count">0</span>
+                        <span class="stat-label">🚀 취업시킨 멘토</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="profile-best-count">0</span>
+                        <span class="stat-label">🏆 베스트 피드백</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="profile-upvote-count">0</span>
+                        <span class="stat-label">👍 받은 도움됨</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="profile-insight-count">0</span>
+                        <span class="stat-label">💡 받은 인사이트</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-activity">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">📝 작성한 글</h2></div>
+                    <div class="card-content">
+                        <ul id="profile-posts-list" class="post-list profile-list">
+                            <li>요청글을 불러오는 중...</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title">💬 남긴 댓글</h2></div>
+                    <div class="card-content">
+                        <ul id="profile-comments-list" class="post-list profile-list">
+                            <li>댓글을 불러오는 중...</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card" id="bookmark-card">
+                    <div class="card-header"><h2 class="card-title">📌 내 스크랩북</h2></div>
+                    <div class="card-content">
+                        <ul id="profile-bookmarks-list" class="post-list profile-list">
+                            <li>스크랩한 글을 불러오는 중...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="js/shared.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/profile.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>피드백 사이트 - 관리 페이지</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+  <main class="main">
+    <div class="container">
+      <div class="page-header">
+        <h1>관리자 대시보드</h1>
+        <p>사용자와 피드백 요청을 관리합니다.</p>
+      </div>
+
+      <div class="card stats-card">
+          <div class="card-header"><h2 class="card-title">📊 사이트 통계</h2></div>
+          <div class="card-content stats-grid">
+              <div class="stat-item">
+                  <span class="stat-value" id="stats-total-users">0</span>
+                  <span class="stat-label">총 사용자 수</span>
+              </div>
+              <div class="stat-item">
+                  <span class="stat-value" id="stats-total-posts">0</span>
+                  <span class="stat-label">총 게시글 수</span>
+              </div>
+              <div class="stat-item stat-item-full"> <span class="stat-label">카테고리별 게시글 수</span>
+                  <ul id="stats-posts-by-category" class="category-stats-list">
+                      <li>로딩 중...</li>
+                  </ul>
+              </div>
+          </div>
+      </div>
+
+      <br>
+
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">👤 계정 관리</h2></div>
+        <div class="card-content">
+          <ul id="user-list" class="post-list management-list">
+            </ul>
+        </div>
+      </div>
+
+      <br>
+
+      <div class="card">
+        <div class="card-header"><h2 class="card-title">📝 피드백 요청 관리</h2></div>
+        <div class="card-content">
+          <ul id="post-management-list" class="post-list management-list">
+            </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="js/shared.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

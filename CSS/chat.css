@@ -1,0 +1,125 @@
+/* chat.html 전용 스타일 */
+
+.chat-container {
+    /* Inherits from .card in components.css */
+    /* background-color, border, border-radius, box-shadow */
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    height: 75vh; /* 높이 살짝 늘림 */
+    padding: 0; /* 내부에서 패딩 제어 */
+    overflow: hidden; /* 내부 요소가 radius 넘지 않도록 */
+}
+
+.chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    background-color: var(--bg-secondary); /* 페이지 배경과 동일하게 */
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* 메시지 사이 간격 살짝 줄임 */
+}
+
+/* Optional: Subtle scrollbar styling */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+.chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+    background-color: var(--border-light);
+    border-radius: 6px;
+}
+:root.dark .chat-messages::-webkit-scrollbar-thumb {
+    background-color: var(--border-light);
+}
+
+.chat-message {
+    padding: 0.6rem 1rem; /* 패딩 조정 */
+    border-radius: 12px; /* 둥근 정도 조정 */
+    max-width: 75%; /* 최대 너비 살짝 늘림 */
+    line-height: 1.5; /* 줄 간격 조정 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* 미묘한 그림자 */
+    transition: background-color 1s ease-in-out; /* 하이라이트 트랜지션 유지 */
+}
+
+.message-meta {
+    font-size: 0.75rem; /* 폰트 살짝 줄임 */
+    font-weight: 500; /* 굵기 조정 */
+    margin-bottom: 0.3rem; /* 내용과의 간격 조정 */
+    opacity: 0.8; /* 약간 투명하게 */
+}
+
+.message-content {
+    font-size: 0.9rem; /* 폰트 살짝 줄임 */
+    word-break: break-word; /* 긴 단어 줄바꿈 */
+}
+
+/* 내가 보낸 메시지 */
+.my-message {
+    background-color: var(--color-primary);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px; /* 뾰족한 꼬리 모양 유지 */
+}
+.my-message .message-meta {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* 다른 사람이 보낸 메시지 */
+.other-message {
+    background-color: var(--bg-primary); /* 카드 배경색 사용 (흰색) */
+    color: var(--text-primary);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px; /* 뾰족한 꼬리 모양 유지 */
+    border: 1px solid var(--border-light); /* 옅은 테두리 추가 */
+}
+:root.dark .other-message {
+    background-color: var(--bg-tertiary); /* 다크모드 배경 */
+    border-color: transparent; /* 다크모드 테두리 제거 */
+}
+.other-message .message-meta {
+    color: var(--text-secondary);
+}
+
+
+.chat-form {
+    display: flex;
+    align-items: center; /* 세로 중앙 정렬 */
+    padding: 1rem 1.5rem; /* 패딩 조정 */
+    border-top: 1px solid var(--border-light);
+    background-color: var(--bg-primary); /* 메시지 영역과 구분 */
+}
+
+.chat-form input {
+    flex-grow: 1;
+    padding: 0.75rem 1rem; /* 패딩 조정 */
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md); /* 둥근 정도 조정 */
+    font-size: 0.95rem; /* 폰트 조정 */
+    margin-right: 0.75rem; /* 버튼과의 간격 조정 */
+    background-color: var(--bg-secondary); /* 배경색 */
+}
+:root.dark .chat-form input { background-color: var(--bg-tertiary); }
+
+.chat-form button.btn-send { /* 전송 버튼 */
+    padding: 0.75rem 1.25rem; /* 패딩 조정 */
+    border-radius: var(--radius-md); /* 둥근 정도 조정 */
+    font-size: 0.9rem; /* 폰트 조정 */
+    flex-shrink: 0; /* 버튼 크기 줄어들지 않도록 */
+}
+
+/* 하이라이트된 메시지 스타일 */
+.highlighted-message {
+    background-color: var(--color-primary-light) !important;
+    /* ✅ [수정] 테두리 제거 (다른 스타일과 충돌 방지) */
+    /* border: 1px solid var(--color-primary); */
+    box-shadow: 0 0 8px var(--color-primary-light); /* 글로우 효과 */
+}
+:root.dark .highlighted-message {
+    background-color: #25395B !important; /* color-primary-light (dark) */
+    box-shadow: 0 0 8px #25395B;
+}

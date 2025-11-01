@@ -1,0 +1,286 @@
+/* ============================================
+   Components CSS - 재사용 가능한 UI 요소
+   ============================================ */
+
+/* Header */
+.header {
+  background-color: var(--bg-primary); /* 카드와 통일감 */
+  border-bottom: 1px solid var(--border-light);
+  position: sticky; top: 0; z-index: 100;
+}
+.header-content {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1rem; /* 상하 패딩 제거 (height로 제어) */
+  max-width: 1280px; margin: 0 auto; height: 64px; /* 높이 살짝 줄임 */
+}
+
+/* Navigation */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem; /* 버튼 간 간격 살짝 줄임 */
+  margin-left: 1.5rem; /* 로고와의 간격 살짝 줄임 */
+}
+/* 메인 내비게이션 버튼 (홈, 피드백 목록 등) */
+.nav .nav-btn {
+  padding: 0.5rem 1rem; /* 패딩 조정 */
+  border-radius: var(--radius-md); /* 둥근 정도 변경 */
+  font-weight: 500;
+  font-size: 0.9rem; /* 폰트 크기 조정 */
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 150ms ease-in-out;
+  white-space: nowrap;
+  /* 배경색 제거 (활성 상태 제외) */
+}
+.nav .nav-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary); /* 호버 시 배경색 */
+}
+.nav .nav-btn.active {
+  background-color: var(--color-primary);
+  color: white;
+}
+.nav .nav-btn.active:hover { /* 활성 버튼 호버 시 */
+    background-color: var(--color-primary);
+    opacity: 0.9;
+}
+
+
+/* Header Search */
+.header-search-container {
+  flex-grow: 1; max-width: 450px; /* 최대 너비 살짝 줄임 */
+  margin: 0 1.5rem; /* 좌우 간격 살짝 줄임 */
+}
+.header-search-container .search-box {
+  position: relative;
+  display: flex;
+}
+.header-search-container .search-icon {
+  position: absolute; left: 0.9rem; top: 50%; /* 아이콘 위치 */
+  transform: translateY(-50%); color: var(--text-secondary);
+  pointer-events: none;
+  width: 18px; height: 18px; /* 아이콘 크기 명시 */
+}
+.header-search-container input {
+  width: 100%; height: 40px; /* 높이 살짝 줄임 */
+  padding: 0 2.5rem 0 2.5rem; /* 아이콘/버튼 공간 조정 */
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md); /* 둥근 정도 변경 */
+  background-color: var(--bg-secondary); /* 배경색 변경 */
+  font-size: 0.9rem; /* 폰트 크기 조정 */
+}
+:root.dark .header-search-container input { background-color: var(--bg-tertiary); } /* 다크모드 검색창 배경 */
+
+.header-search-container .btn { /* 검색 버튼 */
+  position: absolute; right: 4px; top: 4px;
+  height: 32px; /* 높이 살짝 줄임 */
+  padding: 0 1.2rem; /* 패딩 조정 */
+  font-size: 0.9rem; /* 폰트 크기 조정 */
+}
+
+/* 알림 영역 스타일 */
+.notification-bell-area { position: relative; margin-right: 0.5rem; }
+.bell-icon {
+  position: relative;
+  width: 40px; height: 40px; /* 크기 살짝 줄임 */
+  border-radius: 50%; border: none;
+  background-color: transparent; /* 배경 투명 */
+  cursor: pointer; display: flex;
+  justify-content: center; align-items: center;
+  font-size: 1.3rem; /* 아이콘 크기 조정 */
+  transition: background-color 150ms; color: var(--text-secondary);
+}
+.bell-icon:hover { background-color: var(--bg-tertiary); color: var(--text-primary);}
+.notification-badge {
+  position: absolute;
+  top: 5px; right: 5px; /* 위치 조정 */
+  min-width: 18px; height: 18px; /* 크기 살짝 줄임 */
+  padding: 0 5px; /* 패딩 조정 */
+  background-color: var(--color-danger); color: white;
+  border-radius: var(--radius-full); font-size: 0.7rem; /* 폰트 크기 조정 */
+  font-weight: 600; display: flex; justify-content: center; align-items: center;
+  border: 2px solid var(--bg-primary); /* 테두리 배경색과 동일하게 */
+  visibility: hidden; transform: scale(0.5); transition: all 0.2s ease-in-out;
+}
+:root.dark .notification-badge { border-color: var(--bg-primary); }
+.notification-badge.show { visibility: visible; transform: scale(1); }
+.notification-list {
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  top: 60px;
+  right: 0;
+  width: 380px;
+  max-height: 400px;
+  z-index: 101;
+  /* 카드 스타일 직접 적용 (카드 안에 넣으면 복잡해짐) */
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden; /* 내부 스크롤 위해 */
+}
+.notification-list.show {
+  display: flex;
+}
+.notification-list-header {
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 1rem 1.25rem; /* 패딩 조정 */
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+#notification-items-container {
+  list-style: none;
+  padding: 0; margin: 0; /* ul 기본 스타일 제거 */
+  overflow-y: auto;
+  flex-grow: 1;
+}
+#notification-items-container li { /* 기본 메시지 스타일 */
+  padding: 1rem 1.25rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.notification-item { /* 실제 알림 아이템 */
+  display: block;
+  padding: 1rem 1.25rem !important; /* li 기본 스타일 덮어쓰기 */
+  border-bottom: 1px solid var(--border-light);
+  text-decoration: none;
+  color: var(--text-primary) !important;
+  transition: background-color 150ms;
+}
+.notification-item:last-child {
+  border-bottom: none;
+}
+.notification-item:hover {
+  background-color: var(--bg-tertiary);
+}
+.notification-item-content {
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.notification-item-content strong {
+  color: var(--color-primary);
+  font-weight: 600; /* 강조 */
+}
+.notification-item-date {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+.notification-item.is-unread {
+  background-color: var(--color-primary-light);
+}
+.notification-item.is-unread:hover {
+  background-color: #DFE8FB; /* 약간 더 진한 배경 */
+}
+:root.dark .notification-item.is-unread { background-color: #25395B; }
+:root.dark .notification-item.is-unread:hover { background-color: #1e2e47; }
+
+
+/* User Actions (오른쪽 사용자 관련 버튼 영역) */
+#user-actions { display: flex; align-items: center; gap: 0.25rem; }
+
+/* #user-actions 내부 모든 버튼/링크 공통 스타일 재정의 */
+#user-actions > a,
+#user-actions > button {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-md); /* 둥근 정도 변경 */
+  white-space: nowrap; font-weight: 500; text-decoration: none;
+  transition: all 150ms ease-in-out; cursor: pointer; border: none;
+  font-size: 0.9rem; /* 폰트 크기 통일 */
+  padding: 0.5rem 1rem; /* 패딩 통일 */
+  color: var(--text-secondary);
+  background-color: transparent; /* 기본 배경 투명 */
+}
+#user-actions > a:hover,
+#user-actions > button:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary); /* 기본 호버 배경 */
+}
+
+/* 로그인 버튼 전용 스타일 (.btn--login 클래스) */
+#user-actions a.btn--login {
+    background-color: var(--color-primary);
+    color: white;
+}
+#user-actions a.btn--login:hover {
+    opacity: 0.9;
+    color: white;
+    background-color: var(--color-primary);
+}
+
+/* 로그아웃 버튼 스타일 (.btn--ghost) */
+#user-actions .btn--ghost {
+    background-color: transparent;
+    color: var(--text-secondary);
+}
+#user-actions .btn--ghost:hover {
+    background-color: var(--bg-tertiary);
+}
+
+/* 사용자 이름 링크 스타일 (#user-display-link) */
+#user-actions a#user-display-link {
+    font-size: 0.9rem; /* 다른 버튼과 통일 */
+    padding: 0.5rem 1rem; /* 다른 버튼과 통일 */
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    /* 배경/호버는 위 공통 스타일 따름 */
+}
+
+
+/* Card */
+.card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-card); /* 테두리 추가 */
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden; /* 내부 컨텐츠가 radius를 넘지 않도록 */
+}
+.card-header {
+  padding: 1rem 1.25rem; /* 패딩 조정 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* border-bottom 제거 */
+  background-color: var(--bg-primary); /* 카드 본문과 배경 통일 */
+}
+.card-title { font-weight: 600; font-size: 1.1rem; }
+.card-content { padding: 1.25rem; } /* 상하좌우 동일 패딩 */
+
+/* Button */
+.btn {
+  padding: 0.5rem 1rem; /* 패딩 조정 (헤더 버튼과 통일) */
+  font-size: 0.9rem; /* 폰트 크기 조정 */
+  border: none;
+  border-radius: var(--radius-md); /* 둥근 정도 변경 */
+  font-weight: 500;
+  cursor: pointer; transition: all 150ms;
+  white-space: nowrap;
+  display: inline-flex; /* 아이콘 정렬 위해 */
+  align-items: center;
+  justify-content: center;
+}
+.btn--primary { background-color: var(--color-primary); color: white; }
+.btn--primary:hover { opacity: 0.9; }
+.btn--ghost { background-color: var(--bg-tertiary); color: var(--text-secondary); }
+.btn--ghost:hover { background-color: var(--border-light); color: var(--text-primary); }
+.btn--danger { background-color: var(--color-danger); color: white; }
+.btn--danger:hover { opacity: 0.9; }
+.btn--success { background-color: #16A34A; color: white; }
+.btn--success:hover { opacity: 0.9; }
+
+/* Post List */
+.post-list { list-style: none; padding: 0; margin: 0; }
+.post-item { padding: 1rem 0; border-bottom: 1px solid var(--border-light); cursor: pointer; list-style: none;}
+.post-item:last-child { border-bottom: none; }
+/* 카드 안의 첫번째 post-item 상단 패딩 제거 */
+.card-content > .post-list > .post-item:first-child { padding-top: 0; }
+/* 카드 안의 마지막 post-item 하단 패딩 제거 */
+.card-content > .post-list > .post-item:last-child { padding-bottom: 0; }
+
+.post-item-title { font-weight: 600; margin-bottom: 0.25rem; color: var(--text-primary); }
+.post-item-meta { font-size: 0.875rem; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 0.5rem; }

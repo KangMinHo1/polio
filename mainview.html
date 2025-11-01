@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>피드백 사이트 - 홈</title>
+  
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/index.css" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+  <main class="main">
+    <div class="container">
+      <div class="main-grid">
+        <section class="main-content">
+          <div class="card">
+            <div class="card-header"><h2 class="card-title">📌 추천 포트폴리오</h2></div>
+            <div class="card-content">
+              <ul id="home-important-post-list" class="post-list">
+                </ul>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h2 class="card-title">⭐ 인기 포트폴리오</h2></div>
+            <div class="card-content">
+              <div class="card-grid card-grid--solid">
+                </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">📝 최신 피드백 요청</h2>
+              <a href="posts.html?filter-type=feedback&filter-status=ongoing" class="btn btn--ghost">전체보기</a>
+            </div>
+            <div class="card-content">
+              <ul id="home-post-list" class="post-list">
+                </ul>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">💡 최신 케이스 스터디</h2>
+              <a href="posts.html?filter-type=casestudy" class="btn btn--ghost">전체보기</a>
+            </div>
+            <div class="card-content">
+              <ul id="home-casestudy-list" class="post-list">
+                </ul>
+            </div>
+          </div>
+          
+        </section>
+
+        <aside class="sidebar">
+          
+          <div class="card" id="profile-summary-card" style="display: none;">
+            <div class="card-content profile-summary-content">
+              <span id="profile-welcome-text">환영합니다!</span>
+              <h3 id="profile-welcome-user">(user) id</h3>
+              <a href="#" id="profile-goto-button" class="btn btn--primary btn--full">내 프로필 보기</a>
+            </div>
+          </div>
+          
+          <div class="card" id="online-mentor-card" style="display: none;">
+            <div class="card-header"><h2 class="card-title">🟢 지금 활동 중인 멘토</h2></div>
+            <div class="card-content">
+              <ul id="online-mentor-list" class="online-mentor-list">
+                </ul>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h2 class="card-title">📢 공지사항</h2></div>
+            <div class="card-content"><ul id="notice-list" class="notice-list"></ul></div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header"><h2 class="card-title">🔗 빠른 링크</h2></div>
+            <div class="card-content">
+              <div class="quick-links">
+                <a href="posts.html?category=프론트엔드" class="quick-link-item">
+                  <span class="quick-link-icon">🖥️</span><span>프론트엔드</span>
+                </a>
+                <a href="posts.html?category=백엔드" class="quick-link-item">
+                  <span class="quick-link-icon">🗄️</span><span>백엔드</span>
+                </a>
+                <a href="posts.html?category=UX/UI 디자인" class="quick-link-item">
+                  <span class="quick-link-icon">🎨</span><span>UX/UI 디자인</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h2 class="card-title">📊 포트폴리오 트렌드</h2></div>
+            <div class="card-content">
+              <div class="quick-links">
+                <a href="trends.html" class="quick-link-item">
+                  <span class="quick-link-icon">🚀</span><span>최신 트렌드 보러가기</span>
+                </a>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 1rem;">
+                커뮤니티 데이터를 분석한 포트폴리오 성공 팁을 확인하세요.
+              </p>
+            </div>
+          </div>
+
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder"></div>
+  
+  <a href="chat.html" class="chat-widget" id="chat-widget">
+    <span>💬</span>
+  </a>
+
+  <script src="js/shared.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/home.js"></script>
+</body>
+</html>

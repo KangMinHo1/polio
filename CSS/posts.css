@@ -1,0 +1,409 @@
+/* posts.html 전용 스타일 */
+
+/* 통합 필터 영역 스타일 */
+.post-filters {
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-wrap: wrap; /* 화면 작아지면 줄바꿈 */
+  align-items: center;
+  gap: 1.5rem 2rem; /* 세로 간격, 가로 간격 */
+}
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* 라벨과 컨트롤 사이 간격 */
+}
+.filter-group label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  white-space: nowrap; /* 라벨 줄바꿈 방지 */
+}
+.filter-group-checkboxes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap; /* 태그 많으면 줄바꿈 */
+  gap: 1rem;
+}
+.filter-group-checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.filter-group-checkboxes input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}
+
+
+/* 기존 툴바 (이제 버튼만 있음) */
+.toolbar {
+  display: flex;
+  justify-content: flex-end; /* 버튼을 오른쪽으로 */
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.select {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-primary);
+}
+
+/* 게시글 레이아웃 컨테이너 */
+.posts-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  transition: grid-template-columns 0.3s ease-in-out;
+}
+
+.post-preview-container {
+  display: none;
+}
+.posts-layout.is-detail-view {
+  grid-template-columns: 1fr 1.2fr;
+}
+.posts-layout.is-detail-view .post-preview-container {
+  display: block;
+}
+.post-list-container {
+  height: 100%;
+}
+.post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0; /* ul 기본 패딩 제거 */
+  margin: 0; /* ul 기본 마진 제거 */
+}
+.post-item {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem;
+  border-bottom: none;
+  list-style: none; /* li 기본 마커 제거 */
+  cursor: pointer; /* 클릭 가능 표시 */
+}
+.post-item:hover {
+    border-color: var(--color-primary); /* 호버 효과 */
+}
+.post-item.is-active {
+  border-color: var(--color-primary);
+}
+
+.post-item-image {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  margin-top: 1rem;
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 0;
+}
+.post-preview-card {
+  width: 100%;
+  min-height: 80vh;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+.post-preview-card h1 { font-size: 1.75rem; margin-bottom: 1rem; }
+.post-preview-card .post-meta {
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex; /* 메타 정보 가로 정렬 */
+  flex-wrap: wrap;
+  gap: 0.75rem; /* 메타 정보 사이 간격 */
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.post-preview-card .post-content { flex-grow: 1; line-height: 1.8; }
+.post-preview-card .post-actions {
+  margin-top: 1.5rem;
+  display: flex; /* 버튼들 가로 정렬 */
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* 템플릿 렌더링 스타일 */
+.post-content .template-header {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-light);
+}
+.post-content .template-header:first-of-type {
+  margin-top: 0;
+}
+.post-content .template-field {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+.post-content .template-field strong {
+  color: var(--text-primary);
+}
+.post-content .template-field a { /* 링크 스타일 */
+    color: var(--color-primary);
+    text-decoration: underline;
+}
+.post-content .template-field a:hover {
+    opacity: 0.8;
+}
+.post-content .template-content-box {
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  line-height: 1.7;
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem; /* 박스 간격 추가 */
+}
+.post-content .template-content-box.is-question {
+  background-color: var(--color-primary-light);
+  border-left: 3px solid var(--color-primary);
+}
+:root.dark .post-content .template-content-box {
+  background-color: var(--bg-tertiary);
+}
+:root.dark .post-content .template-content-box.is-question {
+  background-color: #25395B;
+  border-left-color: var(--color-primary);
+}
+
+/* 요청 태그 렌더링 스타일 */
+.post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem; /* 본문 내용과 간격 */
+}
+.post-tag {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-primary);
+    background-color: var(--color-primary-light);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+}
+:root.dark .post-tag {
+    background-color: #25395B;
+    color: var(--color-primary); /* 다크모드에서 primary 색상이 밝으므로 유지 */
+}
+/* 목록(meta) 안의 태그 스타일 */
+.post-item-meta .post-tag {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    background-color: var(--bg-tertiary); /* 목록에서는 더 연하게 */
+    color: var(--text-secondary);
+}
+:root.dark .post-item-meta .post-tag {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+
+.post-attachment {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.post-attachment-title {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+.post-attachment-link {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: background-color 150ms;
+}
+.post-attachment-link:hover {
+  opacity: 0.85;
+}
+.comment-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-light);
+}
+.comment-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.comment-form textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  background-color: var(--bg-secondary);
+  resize: vertical;
+}
+.comment-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+.comment-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0;
+  margin: 0;
+}
+.comment-item {
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border-light);
+  list-style: none;
+}
+.comment-author {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.comment-content {
+  color: var(--text-primary);
+  line-height: 1.7;
+  margin-bottom: 0.5rem;
+}
+.comment-date {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.post-author-link, .comment-author-link {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary-light);
+  transition: all 0.2s;
+}
+.post-author-link:hover, .comment-author-link:hover {
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+.is-best-comment {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  box-shadow: 0 0 10px var(--color-primary-light);
+}
+:root.dark .is-best-comment {
+  background-color: #25395B;
+  border-color: var(--color-primary);
+}
+.post-resolved-badge {
+  display: inline-block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #16A34A; /* Green */
+  background-color: #F0FDF4;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+}
+:root.dark .post-resolved-badge {
+  color: #4ADE80;
+  background-color: #162a1d;
+}
+.post-hired-badge {
+  display: inline-block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #A16207; /* Highlight color 어둡게 */
+  background-color: #FFFBEB; /* Highlight bg */
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+}
+:root.dark .post-hired-badge {
+  color: #FACC15; /* Highlight color 밝게 */
+  background-color: #42381f; /* Highlight bg 어둡게 */
+}
+.comment-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.btn-comment-action {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  border-radius: var(--radius-full);
+}
+.btn-comment-action.is-active {
+  background-color: var(--color-primary);
+  color: white;
+}
+.btn-insight {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  border-radius: var(--radius-full);
+}
+.btn-insight.is-active {
+  background-color: var(--color-highlight);
+  color: white;
+}
+:root.dark .btn-insight.is-active {
+    color: var(--text-primary);
+}
+.btn-bookmark {
+    /* .btn, .btn--ghost 스타일 상속 */
+}
+.btn-bookmark.is-active {
+    background-color: var(--color-primary);
+    color: white;
+}
+.btn-bookmark.is-active:hover {
+    color: white;
+    opacity: 0.9;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .post-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+  }
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .filter-group-checkboxes {
+    flex-wrap: wrap;
+  }
+  .posts-layout.is-detail-view {
+    grid-template-columns: 1fr;
+  }
+}

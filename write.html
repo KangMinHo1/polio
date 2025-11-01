@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community App - 글쓰기</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/write.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+  <main class="main">
+    <div class="container">
+      <div class="page-header">
+        <h1 id="page-title">피드백 요청하기</h1>
+        <p id="page-description">포트폴리오, 이력서 링크를 공유하고 피드백을 요청해보세요.</p>
+      </div>
+
+      <div class="write-form-container card">
+        <form id="write-form" class="write-form">
+          <input type="hidden" id="write-post-id" value="">
+
+          <div class="form-grid">
+            <div class="form-group grid-col-6" id="post-type-selector" style="display: none;">
+              <label id="post-type-label">글 유형 선택</label>
+              <div class="radio-group">
+                <label>
+                  <input type="radio" name="postType" value="feedback" checked>
+                  <span>📝 피드백 요청</span>
+                </label>
+                <label>
+                  <input type="radio" name="postType" value="casestudy">
+                  <span>💡 케이스 스터디 (분석글)</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group grid-col-2">
+              <label for="write-category" id="category-label">직무</label>
+              <select id="write-category" class="select" required></select>
+            </div>
+            <div class="form-group grid-col-4">
+              <label for="write-title" id="title-label">제목</label>
+              <input id="write-title" type="text" placeholder="제목을 입력하세요 (예: [프론트엔드] 신입 포트폴리오)" required />
+            </div>
+
+             <div class="form-group grid-col-6">
+              <label for="write-link" id="link-label">포트폴리오/이력서 링크 (선택)</label>
+              <input id="write-link" type="url" placeholder="http://notion.so/..., http://github.com/..." />
+            </div>
+
+            <div class="form-group grid-col-6">
+              <label for="write-file" id="file-label">파일 첨부 (선택)</label>
+              <div class="file-input-wrapper">
+                 <input id="write-file" type="file" />
+                 <span id="file-info-display"></span>
+              </div>
+            </div>
+
+            <div class="form-group grid-col-6" id="important-group" style="display: none;">
+              <div class="checkbox-group">
+                  <input id="write-important" type="checkbox">
+                  <label for="write-important">중요 요청으로 등록</label>
+              </div>
+              <p class="form-group-description">관리자만 사용 가능. 체크 시 목록 상단에 고정됩니다.</p>
+            </div>
+          </div>
+
+          <hr class="form-divider">
+
+          <div id="feedback-template-fields">
+            
+            <div id="projects-container">
+                </div>
+
+            <button type="button" id="add-project-btn" class="btn btn--ghost add-project-btn">
+              + 프로젝트 추가하기
+            </button>
+            
+            <hr class="form-divider" style="margin-top: 2rem;">
+
+            <fieldset class="feedback-tags-group">
+                <legend>주요 피드백 요청 분야 (선택)</legend>
+                <div class="checkbox-grid" id="feedback-tags-container">
+                    <label><input type="checkbox" name="feedbackTag" value="코드 구조"> #코드 구조</label>
+                    <label><input type="checkbox" name="feedbackTag" value="디자인"> #디자인</label>
+                    <label><input type="checkbox" name="feedbackTag" value="UX/UI"> #UX/UI</label>
+                    <label><input type="checkbox" name="feedbackTag" value="프로젝트 설명"> #프로젝트 설명</label>
+                    <label><input type="checkbox" name="feedbackTag" value="기술 스택"> #기술 스택</label>
+                    <label><input type="checkbox" name="feedbackTag" value="전반적 흐름"> #전반적 흐름</label>
+                </div>
+                
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="feedback-tags-other">기타 (직접 입력)</label>
+                    <input type="text" id="feedback-tags-other" placeholder="예: #백엔드 아키텍처, #성능 최적화">
+                    <p class="form-group-description">쉼표(,)로 구분하여 자유롭게 태그를 추가할 수 있습니다.</p>
+                </div>
+            </fieldset>
+
+            <div class="form-group" style="margin-top: 2rem;">
+              <label for="feedback-questions">가장 피드백 받고 싶은 점 (필수)</label>
+              <textarea id="feedback-questions" rows="4" placeholder="예: 1번 프로젝트의 코드 구조가 괜찮은지, 또는 전체적인 UI/UX 관점에서 조언을 구하고 싶습니다." required></textarea>
+            </div>
+          </div>
+
+          <div class="form-group" id="casestudy-content-field" style="display: none;">
+            <label for="write-content">케이스 스터디 내용</label>
+            <textarea id="write-content" rows="15" placeholder="분석할 포트폴리오에 대해 상세히 설명하고, 이 포트폴리오가 왜 좋은지(또는 아쉬운지) 섹션별로 분석 내용을 작성해주세요."></textarea>
+          </div>
+          
+          <div class="form-actions">
+            <a class="btn btn--ghost" href="posts.html">취소</a>
+            <button type="submit" id="submit-button" class="btn btn--primary">피드백 요청</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="js/shared.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/write.js"></script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Community App - 피드백 목록</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/posts.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+  <main class="main">
+    <div class="container">
+      <div class="page-header">
+        <h1>피드백 목록</h1>
+        <p>다른 사람들의 포트폴리오/이력서를 보고 피드백을 남겨주세요.</p>
+      </div>
+
+      <div class="post-filters card">
+        <div class="filter-group">
+          <label for="category-filter">직무</label>
+          <select id="category-filter" class="select">
+            <option value="all">전체</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>글 유형</label>
+          <div class="filter-group-checkboxes" id="filter-type-group">
+            <label><input type="checkbox" name="filter-type" value="feedback" checked> 📝 피드백 요청</label>
+            <label><input type="checkbox" name="filter-type" value="casestudy" checked> 💡 케이스 스터디</label>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>글 상태</label>
+          <div class="filter-group-checkboxes" id="filter-status-group">
+            <label><input type="checkbox" name="filter-status" value="ongoing" checked> 진행 중</label>
+            <label><input type="checkbox" name="filter-status" value="resolved" checked> ✅ 해결됨</label>
+            <label><input type="checkbox" name="filter-status" value="hired" checked> 🎉 취업 성공</label>
+          </div>
+        </div>
+        
+        <div class="filter-group">
+          <label>요청 태그</label>
+          <div class="filter-group-checkboxes" id="filter-tags-group">
+            <label><input type="checkbox" name="filter-tag" value="코드 구조" checked> #코드 구조</label>
+            <label><input type="checkbox" name="filter-tag" value="디자인" checked> #디자인</label>
+            <label><input type="checkbox" name="filter-tag" value="UX/UI" checked> #UX/UI</label>
+            <label><input type="checkbox" name="filter-tag" value="프로젝트 설명" checked> #프로젝트 설명</label>
+            <label><input type="checkbox" name="filter-tag" value="기술 스택" checked> #기술 스택</label>
+            <label><input type="checkbox" name="filter-tag" value="전반적 흐름" checked> #전반적 흐름</label>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label for="sort-by">정렬</label>
+          <select id="sort-by" class="select">
+            <option value="latest">최신순</option>
+            <option value="popular">인기순 (좋아요+인사이트)</option>
+            <option value="comments">댓글 많은 순</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="toolbar">
+        <div></div>
+        <a class="btn btn--primary" href="write.html">피드백 요청하기</a>
+      </div>
+      
+      <div id="posts-layout" class="posts-layout">
+        <div class="post-list-container">
+          <ul id="post-list" class="post-list">
+            <li>게시글을 불러오는 중...</li>
+          </ul>
+          <div class="pagination">
+            <button id="prev-page-button" class="btn btn--ghost" disabled>&lt; 이전</button>
+            <span id="page-info" class="pagination-info"></span>
+            <button id="next-page-button" class="btn btn--ghost">다음 &gt;</button>
+          </div>
+        </div>
+
+        <div id="post-preview-container" class="post-preview-container">
+          <article id="post-preview" class="card post-preview-card">
+            <p>목록에서 게시글을 선택하세요.</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="js/shared.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/posts.js"></script>
+</body>
+</html>

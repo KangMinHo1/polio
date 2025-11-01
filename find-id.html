@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>아이디 찾기</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <a href="mainview.html" class="auth-logo">Feedback</a>
+                <h1>아이디 찾기</h1>
+            </div>
+
+            <form id="findIdForm" class="auth-form">
+                <div class="form-group">
+                    <label for="name">이름</label>
+                    <input type="text" id="name" placeholder="이름을 입력하세요" required />
+                </div>
+                <div class="form-group">
+                    <label for="email">이메일</label>
+                    <input type="email" id="email" placeholder="이메일을 입력하세요" required />
+                </div>
+                <button type="submit" class="btn btn--success btn--full">아이디 찾기</button>
+            </form>     
+
+            <div class="auth-footer">
+                <a href="login.html" class="link">로그인으로 돌아가기</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/shared.js"></script>
+    <script src="js/find-account.js"></script> </body>
+</html>

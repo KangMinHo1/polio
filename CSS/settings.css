@@ -1,0 +1,141 @@
+/* settings.html 전용 스타일 */
+
+.settings-container {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem; /* 카드(섹션) 사이 간격 늘림 */
+}
+
+/* 개별 설정 섹션 (카드) */
+.settings-section .card-content {
+  padding-top: 0.5rem; /* 헤더와의 간격 살짝 조정 */
+  padding-bottom: 1.5rem;
+}
+
+/* 설정 항목 (테마, 내 활동, 로그아웃, 탈퇴 등) */
+.setting-item {
+  display: grid; /* Grid 사용으로 정렬 개선 */
+  grid-template-columns: 1fr auto; /* 내용 | 버튼/토글 */
+  align-items: center;
+  gap: 1.5rem; /* 내용과 컨트롤 사이 간격 */
+  padding: 1.25rem 0; /* 상하 여백 조정 */
+}
+/* 첫번째 항목 위쪽 패딩 제거 (카드 내부 패딩 사용) */
+.settings-section .card-content > .setting-item:first-child {
+    padding-top: 0;
+}
+/* 마지막 항목 아래쪽 패딩 제거 (카드 내부 패딩 사용) */
+.settings-section .card-content > .setting-item:last-child {
+    padding-bottom: 0;
+}
+
+.setting-info h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.2rem;
+  color: var(--text-primary);
+}
+.setting-info p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* 회원 탈퇴처럼 위험한 항목 */
+.setting-item--danger {
+  /* 테두리 대신 배경색 사용 */
+  background-color: #FEF2F2; /* Very light red */
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem !important; /* 내부 패딩 강제 적용 */
+  margin-top: 1rem; /* 위쪽과 간격 */
+}
+:root.dark .setting-item--danger {
+    background-color: #3f2121; /* Dark red background */
+}
+.setting-item--danger .setting-info h4 { color: var(--color-danger); }
+:root.dark .setting-item--danger .setting-info h4 { color: #FCA5A5; } /* Lighter red for dark */
+
+
+/* 항목 사이 구분선 */
+.setting-divider {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 0; /* setting-item의 padding으로 간격 제어 */
+}
+
+/* 비밀번호 변경 폼 스타일 */
+.settings-form .form-group {
+  display: grid;
+  grid-template-columns: 1fr; /* 라벨을 위로 */
+  gap: 0.5rem; /* 라벨과 입력창 사이 간격 */
+  margin-bottom: 1.5rem;
+}
+.settings-form label {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+.settings-form .form-actions {
+  border-top: 1px solid var(--border-light); /* 버튼 영역 구분선 */
+  padding-top: 1.5rem;
+  margin-top: 2rem;
+  justify-content: flex-end; /* 버튼 오른쪽 정렬 */
+}
+
+/* 비밀번호 입력창 + 아이콘 */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.password-input-wrapper input {
+  /* 기본 스타일 상속 (base.css or components.css) */
+  width: 100%;
+  padding-right: 3rem; /* 아이콘 공간 확보 */
+  background-color: var(--bg-secondary);
+}
+:root.dark .password-input-wrapper input { background-color: var(--bg-tertiary); }
+
+.password-toggle-icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 1.2rem; /* 아이콘 크기 살짝 키움 */
+  user-select: none; /* 아이콘 텍스트 선택 방지 */
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.password-toggle-icon:hover {
+    opacity: 1;
+}
+
+
+/* --- 다크모드 스위치 토글 스타일 (동일) --- */
+.switch { position: relative; display: inline-block; width: 50px; height: 26px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--color-primary); }
+input:checked + .slider:before { transform: translateX(24px); }
+
+
+/* 반응형 */
+@media (max-width: 600px) {
+  .setting-item {
+      grid-template-columns: 1fr; /* 작은 화면에서 컨트롤 아래로 */
+      gap: 0.75rem;
+      padding: 1rem 0;
+  }
+  .setting-item > .btn,
+  .setting-item > .switch,
+  .setting-item > .btn--ghost,
+  .setting-item > .btn--danger {
+      justify-self: start; /* 컨트롤 왼쪽 정렬 */
+  }
+  .setting-item--danger { padding: 1rem !important; }
+  .settings-form .form-group { margin-bottom: 1rem; }
+}

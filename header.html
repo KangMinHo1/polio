@@ -1,0 +1,41 @@
+<header class="header">
+  <div class="header-content">
+    <div class="logo">
+      <a href="mainview.html" style="display:flex; align-items:center; text-decoration:none; color:inherit;">
+        <span class="logo-icon" style="font-size: 1.5rem;">📝</span>
+        <span class="logo-text" style="font-weight: 700; font-size: 1.25rem; margin-left: 0.5rem;">Feedback</span>
+      </a>
+    </div>
+    <nav class="nav" id="main-nav">
+      <a class="nav-btn" href="mainview.html">홈</a>
+      <a class="nav-btn" href="posts.html">피드백 목록</a>
+      <a class="nav-btn" href="chat.html">채팅</a>
+      <a class="nav-btn" href="write.html">요청하기</a>
+      <a class="nav-btn" href="settings.html">설정</a>
+    </nav>
+
+    <div class="header-search-container">
+      <div class="search-box">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input id="header-search-input" type="search" placeholder="통합 검색..." />
+        <button id="header-search-button" class="btn btn--primary">검색</button>
+      </div>
+    </div>
+
+    <div id="notification-bell-area" class="notification-bell-area">
+      <button class="bell-icon" id="bell-icon">
+        <span>🔔</span>
+        <div class="notification-badge" id="notification-badge">0</div>
+      </button>
+      <div class="notification-list card" id="notification-list">
+        <div class="notification-list-header">알림</div>
+        <ul id="notification-items-container">
+          <li>읽지 않은 알림이 없습니다.</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div id="user-actions">
+      </div>
+  </div>
+</header>
