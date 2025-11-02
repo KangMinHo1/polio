@@ -26,6 +26,10 @@ public class JwtTokenProvider {
     @Value("${jwt.access-token-expiration-ms}")
     private long accessTokenExpirationMs;
 
+    // 1. === [추가] Refresh Token 만료 시간 주입 ===
+    @Value("${jwt.refresh-token-expiration-ms}")
+    private long refreshTokenExpirationMs;
+
     // HMAC-SHA 알고리즘을 위한 SecretKey 객체. (String이 아님)
     private SecretKey secretKey;
 
@@ -56,6 +60,27 @@ public class JwtTokenProvider {
                 .signWith(secretKey, Jwts.SIG.HS256)// 사용할 서명 알고리즘과 비밀 키
                 .compact();// 토큰을 문자열로 압축
     }
+
+
+    // 2. === [추가] Refresh Token 생성 메서드 ===
+    /**
+     * 로그인 성공 시 Refresh Token을 생성하는 메서드
+     * (Access Token보다 만료 시간이 훨씬 김)
+     * @param email 사용자의 이메일 (토큰의 주체(Subject)로 사용)
+     * @return 생성된 JWT Refresh Token 문자열
+     */
+    public String createRefreshToken(String email){
+        Date now = new Date();
+        Date validity = new Date(now.getTime() + refreshTokenExpirationMs);// 3. 리프레시 토큰 만료 시간 사용
+
+        return Jwts.builder()
+                .subject(email) // 4. (중요) Access Token과 동일한 주체(email)를 가져야 함
+                .issuedAt(now)
+                .expiration(validity)
+                .signWith(secretKey, Jwts.SIG.HS256)
+                .compact();
+    }
+
 
 
     /**
@@ -112,5 +137,7 @@ public class JwtTokenProvider {
 
         return claims.getSubject(); // Claims에서 subject(이메일) 반환
     }
+
+
 
 }

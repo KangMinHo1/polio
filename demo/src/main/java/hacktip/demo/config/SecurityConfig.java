@@ -35,9 +35,8 @@ public class SecurityConfig {
 
                 // 3. HTTP 요청 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ 이 부분이 핵심입니다!
-                        // "/signup" 경로는 인증 없이 누구나 접근(permitAll)할 수 있도록 허용
-                        .requestMatchers("/signup", "/login").permitAll()
+                        // 1. === [수정] "/reissue" 경로도 permitAll()에 추가 ===
+                        .requestMatchers("/signup", "/login", "/reissue").permitAll()
 
                         // 그 외의 모든 요청은 인증(authenticated)이 필요함
                         .anyRequest().authenticated()
