@@ -4,52 +4,42 @@
 
 :root {
   /* Colors */
-  --color-primary: #3B82F6;
-  --color-primary-light: #EFF6FF;
-  --color-danger: #EF4444;
-  --color-highlight: #F59E0B;
+  --color-primary: #5856D6;
+  --color-primary-light: #F0F0FF;
+  --color-danger: #FF3B30;
+  --color-highlight: #FF9500;
   
   /* Background */
   --bg-primary: #ffffff;
   --bg-secondary: #F9FAFB;
   --bg-tertiary: #F3F4F6;
-  --bg-highlight: #FFFBEB;
+  --bg-highlight: #FFF9F2;
   
   /* Text */
-  --text-primary: #111827;
-  --text-secondary: #6B7280;
+  --text-primary: #1D1D1F;
+  --text-secondary: #8A8A8E;
   
   /* Borders */
-  --border-light: #E5E7EB;
-  --border-card: #E5E7EB; /* ✅ [추가] 카드 테두리 색상 */
+  --border-light: #EAEAEA;
   
   /* Shadows */
-  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.05);
   
   /* Spacing & Radius */
   --space-md: 1rem;
-  --radius-md: 8px;
+  --radius-md: 12px;
   --radius-full: 9999px;
 }
 
 :root.dark {
   /* 다크 모드 색상 */
-  --color-primary: #60A5FA;
-  --color-primary-light: #25395B;
-  
-  /* Background */
-  --bg-primary: #1F2937;
-  --bg-secondary: #111827;
-  --bg-tertiary: #374151;
-  --bg-highlight: #362F1F;
-  
-  /* Text */
-  --text-primary: #F9FAFB;
-  --text-secondary: #9CA3AF;
-  
-  /* Borders */
-  --border-light: #374151;
-  --border-card: #374151; /* ✅ [추가] 다크모드 카드 테두리 */
+  --bg-primary: #1C1C1E;
+  --bg-secondary: #000000;
+  --bg-tertiary: #2C2C2E;
+  --bg-highlight: #3A302C;
+  --text-primary: #FFFFFF;
+  --text-secondary: #8D8D92;
+  --border-light: #3A3A3C;
 }
 
 * {
@@ -72,29 +62,52 @@ body {
 }
 
 .main {
-  padding: 3rem 0; /* ✅ [수정] 상하 여백 늘림 */
+  padding: 2.5rem 0;
 }
 
-/* 채팅 위젯 스타일 (유지) */
-.chat-widget {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  width: 60px;
-  height: 60px;
-  background-color: var(--color-primary);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 2rem;
-  text-decoration: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s ease-in-out;
-  z-index: 99;
+/* ✅ [추가] 1. 전역 폼 요소 스타일 (라이트 모드 기본) */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="search"],
+textarea,
+select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  background-color: var(--bg-tertiary); /* 기본 배경 (연회색) */
+  color: var(--text-primary); /* 기본 글자 (검은색) */
+  font-family: inherit;
 }
 
-.chat-widget:hover {
-  transform: scale(1.1);
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25em 1.25em;
+  padding-right: 2.5rem;
+}
+
+/* ✅ [추가] 2. 다크 모드 폼 요소 스타일 (핵심 수정) */
+:root.dark input[type="text"],
+:root.dark input[type="email"],
+:root.dark input[type="password"],
+:root.dark input[type="url"],
+:root.dark input[type="search"],
+:root.dark textarea,
+:root.dark select {
+  background-color: var(--bg-tertiary); /* 어두운 배경 */
+  color: var(--text-primary); /* 흰색 글자 */
+  border-color: var(--border-light); /* 어두운 테두리 */
+}
+
+/* 다크 모드 select 화살표 */
+:root.dark select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%239CA3AF' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
 }
