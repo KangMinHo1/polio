@@ -43,6 +43,8 @@ dependencies {
 	// 3. jjwt-jackson: JWT의 JSON 파싱을 위한 Jackson 지원
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 	// ======================================
+
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
 }
 
 tasks.named('test') {

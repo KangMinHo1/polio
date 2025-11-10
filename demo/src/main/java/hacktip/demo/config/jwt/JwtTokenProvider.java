@@ -1,4 +1,4 @@
-package hacktip.demo.config;
+package hacktip.demo.config.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;

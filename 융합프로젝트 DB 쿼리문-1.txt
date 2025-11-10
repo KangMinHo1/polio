@@ -1,8 +1,43 @@
+------------------------------------------------------------
+-- [안전 초기화 구문] : 기존 객체 모두 삭제
+------------------------------------------------------------
+BEGIN
+    FOR t IN (
+        SELECT table_name FROM user_tables 
+        WHERE table_name IN (
+            'POST_LIKES', 'POST_COMMENT', 'POST', 
+            'CHAT_MESSAGE', 'CHATROOM_MEMBER', 
+            'CHATROOM', 'MEMBERS'
+        )
+    ) LOOP
+        EXECUTE IMMEDIATE 'DROP TABLE ' || t.table_name || ' CASCADE CONSTRAINTS';
+    END LOOP;
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+BEGIN
+    FOR s IN (SELECT sequence_name FROM user_sequences WHERE sequence_name LIKE 'SEQ_%') LOOP
+        EXECUTE IMMEDIATE 'DROP SEQUENCE ' || s.sequence_name;
+    END LOOP;
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+BEGIN
+    FOR trg IN (SELECT trigger_name FROM user_triggers WHERE trigger_name LIKE 'TRG_%') LOOP
+        EXECUTE IMMEDIATE 'DROP TRIGGER ' || trg.trigger_name;
+    END LOOP;
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+------------------------------------------------------------
 -- 1. MEMBERS 테이블
+------------------------------------------------------------
 CREATE TABLE MEMBERS (
     MemberId NUMBER PRIMARY KEY,
-    Email VARCHAR2(255 CHAR) NOT NULL UNIQUE
+    Email VARCHAR2(255 CHAR) NOT NULL UNIQUE,
     Password VARCHAR2(255 CHAR) NOT NULL,
+    Name VARCHAR(255 CHAR) NOT NULL UNIQUE
 );
 
 CREATE SEQUENCE SEQ_MEMBERS START WITH 1 INCREMENT BY 1;
@@ -15,8 +50,9 @@ BEGIN
     SELECT SEQ_MEMBERS.NEXTVAL INTO :NEW.MemberId FROM DUAL;
 END;
 /
-
+------------------------------------------------------------
 -- 2. POST 테이블
+------------------------------------------------------------
 CREATE TABLE POST (
     PostId NUMBER PRIMARY KEY,
     MemberId NUMBER NOT NULL,
@@ -38,8 +74,9 @@ BEGIN
     SELECT SEQ_POST.NEXTVAL INTO :NEW.PostId FROM DUAL;
 END;
 /
-
+------------------------------------------------------------
 -- 3. POST_LIKES 테이블
+------------------------------------------------------------
 CREATE TABLE POST_LIKES (
     PostId NUMBER NOT NULL,
     MemberId NUMBER NOT NULL,
@@ -47,8 +84,9 @@ CREATE TABLE POST_LIKES (
     CONSTRAINT fk_like_post FOREIGN KEY (PostId) REFERENCES POST(PostId),
     CONSTRAINT fk_like_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId)
 );
-
+------------------------------------------------------------
 -- 4. POST_COMMENT 테이블
+------------------------------------------------------------
 CREATE TABLE POST_COMMENT (
     CommentId NUMBER PRIMARY KEY,
     PostId NUMBER NOT NULL,
@@ -69,8 +107,9 @@ BEGIN
     SELECT SEQ_COMMENT.NEXTVAL INTO :NEW.CommentId FROM DUAL;
 END;
 /
-
+------------------------------------------------------------
 -- 5. CHATROOM 테이블
+------------------------------------------------------------
 CREATE TABLE CHATROOM (
     RoomId NUMBER PRIMARY KEY,
     RoomName VARCHAR2(100 CHAR) NOT NULL,
@@ -87,8 +126,9 @@ BEGIN
     SELECT SEQ_CHATROOM.NEXTVAL INTO :NEW.RoomId FROM DUAL;
 END;
 /
-
+------------------------------------------------------------
 -- 6. CHATROOM_MEMBER 테이블
+------------------------------------------------------------
 CREATE TABLE CHATROOM_MEMBER (
     RoomId NUMBER NOT NULL,
     MemberId NUMBER NOT NULL,
@@ -96,8 +136,9 @@ CREATE TABLE CHATROOM_MEMBER (
     CONSTRAINT fk_map_room FOREIGN KEY (RoomId) REFERENCES CHATROOM(RoomId),
     CONSTRAINT fk_map_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId)
 );
-
+------------------------------------------------------------
 -- 7. CHAT_MESSAGE 테이블
+------------------------------------------------------------
 CREATE TABLE CHAT_MESSAGE (
     ChatId NUMBER PRIMARY KEY,
     RoomId NUMBER NOT NULL,
@@ -118,3 +159,21 @@ BEGIN
     SELECT SEQ_CHAT_MESSAGE.NEXTVAL INTO :NEW.ChatId FROM DUAL;
 END;
 /
+
+-- (선택) 토큰 값으로도 검색을 빠르게 하고 싶다면 인덱스를 걸 수 있습니다.
+-- CREATE INDEX IDX_REFRESH_TOKEN_VALUE ON REFRESH_TOKENS (TOKEN_VALUE);
+------------------------------------------------------------
+-- 완료 메시지
+------------------------------------------------------------
+PROMPT ✅ 모든 테이블, 시퀀스, 트리거가 정상 생성되었습니다.
+
+CREATE TABLE REFRESH_TOKENS (
+    -- 1. @Id, VARCHAR2(255)로 설정, Primary Key
+    USER_EMAIL VARCHAR2(255) NOT NULL, 
+    
+    -- 2. @Column, 토큰 길이를 넉넉하게 VARCHAR2(512)로 설정
+    TOKEN_VALUE VARCHAR2(512) NOT NULL, 
+    
+    -- 3. USER_EMAIL을 기본 키로 지정
+    CONSTRAINT PK_REFRESH_TOKENS PRIMARY KEY (USER_EMAIL)
+);

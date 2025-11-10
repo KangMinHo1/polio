@@ -1,6 +1,6 @@
 package hacktip.demo.service;
 
-import hacktip.demo.config.JwtTokenProvider;
+import hacktip.demo.config.jwt.JwtTokenProvider;
 import hacktip.demo.domain.Member;
 import hacktip.demo.domain.RefreshToken;
 import hacktip.demo.dto.*;
@@ -49,7 +49,7 @@ public class MemberService {
 
         Member savedMember = memberRepository.save(entity); // DB에 엔티티 저장
 
-        return new MemberSignUpResponseDto(savedMember.getUserId(), savedMember.getEmail(), savedMember.getName());
+        return new MemberSignUpResponseDto(savedMember.getMemberId(), savedMember.getEmail(), savedMember.getName());
     }
 
     /**

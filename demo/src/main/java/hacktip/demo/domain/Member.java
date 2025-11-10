@@ -12,26 +12,24 @@ import lombok.*;
 public class Member {
 
     @Id
-    // 1. 전략을 IDENTITY에서 SEQUENCE로 변경합니다.
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "MEMBER_SEQ_GENERATOR")
-    // 2. 사용할 시퀀스 제너레이터를 정의합니다.
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_MEMBERS_GENERATOR")
     @SequenceGenerator(
-            name = "MEMBER_SEQ_GENERATOR",   // @GeneratedValue에서 사용할 제너레이터 이름
-            sequenceName = "MEMBER_SEQ",      // DB에 생성될(또는 매핑될) 시퀀스 이름
-            initialValue = 1,                 // 시퀀스 시작 값
-            allocationSize = 1                // (중요) 시퀀스 한 번 호출에 1씩 증가
+            name = "SEQ_MEMBERS_GENERATOR", // Java에서 사용할 제너레이터 이름
+            sequenceName = "SEQ_MEMBERS",    // DB의 시퀀스 이름
+            initialValue = 1,
+            allocationSize = 1
     )
-    @Column(name = "USERID", nullable = false)
-    private Long userId;
+    @Column(name = "MEMBERID", nullable = false)
+    private Long memberId;
 
-    @Column(name = "EMAIL", nullable = false)
+    @Column(name = "EMAIL", nullable = false, unique = true) // 5. DDL의 컬럼 이름
     private String email;
 
     @Column(name = "PASSWORD", nullable = false)
     private String password;
 
 
-    @Column(name ="NAME")
+    @Column(name = "NAME", nullable = false, unique = true)
     private String name;
 
 }

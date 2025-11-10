@@ -1,4 +1,4 @@
-package hacktip.demo.config;
+package hacktip.demo.config.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
