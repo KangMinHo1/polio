@@ -90,6 +90,23 @@ public class MemberService {
         return new TokenInfo(accessToken, refreshToken, refreshTokenExpirationMs);
     }
 
+    // 1. === [로그아웃 메서드 추가] ===
+    /**
+     * 로그아웃 처리
+     * @param email (인증된 사용자의 이메일)
+     */
+    @Transactional
+    public void logout(String email){
+        // 1. 이메일(PK)을 사용하여 DB에서 Refresh Token 조회
+        Optional<RefreshToken> refreshTokenOptional = refreshTokenRepository.findById(email);
+
+        if(refreshTokenOptional.isPresent()){
+            refreshTokenRepository.delete(refreshTokenOptional.get());
+        } else{
+            // 클라이언트가 AT를 삭제했으므로 그냥 성공 처리.
+        }
+    }
+
     // 2. === [토큰 재발급 메서드 추가] ===
     /**
      * Refresh Token을 기반으로 새로운 Access Token을 재발급
