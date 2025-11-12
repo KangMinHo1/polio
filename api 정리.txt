@@ -1,0 +1,48 @@
+회원가입 요청 
+POST  localhost:8080/signup
+입력 데이터 : email, password, name
+반환 데이터 : memberId, email, name
+========================
+
+로그인
+POST  localhost:8080/login
+입력 데이터 : email, password
+반환 데이터 : accessToken (프론트에서 값을 저장후 요청 보낼떄 HTTP 헤더에 Authorization 키로, 
+Bearer (공백 포함) 접두사를 붙인 토큰 값을 수동으로 넣어서 보내야 합니다.)
+
+========================
+
+토큰 재발급 요청 
+POST  localhost:8080/reissue
+입력 데이터 : X
+반환 데이터 : accessToken (프론트에서 값을 저장후 요청 보낼떄 HTTP 헤더에 Authorization 키로, 
+Bearer (공백 포함) 접두사를 붙인 토큰 값을 수동으로 넣어서 보내야 합니다.)
+========================
+
+1대1 채팅방 찾기 또는 생성
+POST  localhost:8080/chat/room/1on1
+입력 데이터 : targetEmail
+반환 데이터 : roomId, roomName
+========================
+
+'내 채팅방' 목록 조회
+GET  localhost:8080/chat/rooms
+입력 데이터 : X
+반환 데이터 : roomId, roomName
+========================
+
+특정 채팅방의 과거 대화 내역 조회
+GET  localhost:8080/chat/room/{roomId}/messages
+입력 데이터 : {roomId}
+반환 데이터 : List<ChatMessageResponseDto>
+
+ChatMessageResponseDto 객체 내부
+chatId, roomId, senderName, content, sendDate
+========================
+특정 사용자에게 메시지 보내기
+localhost:8080/app/chat/send
+입력 데이터 : roomId, content
+
+1. (선행 작업) STOMP 헤더에 JWT 담아 연결하기
+2. (본 작업) /app/chat/send로 메시지 발행하기
+========================
