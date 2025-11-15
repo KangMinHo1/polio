@@ -1,13 +1,12 @@
 package hacktip.demo.controller;
 
-import hacktip.demo.dto.ChatMessageResponseDto;
-import hacktip.demo.dto.ChatRoom1on1RequestDto;
-import hacktip.demo.dto.ChatRoomResponseDto;
+import hacktip.demo.dto.chatDto.ChatMessageResponseDto;
+import hacktip.demo.dto.chatDto.ChatRoom1on1RequestDto;
+import hacktip.demo.dto.chatDto.ChatRoomResponseDto;
 import hacktip.demo.service.ChatRoomService;
 import hacktip.demo.service.ChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;

@@ -3,7 +3,7 @@ package hacktip.demo.service;
 import hacktip.demo.domain.ChatRoom;
 import hacktip.demo.domain.ChatRoomMember;
 import hacktip.demo.domain.Member;
-import hacktip.demo.dto.ChatRoomResponseDto;
+import hacktip.demo.dto.chatDto.ChatRoomResponseDto;
 import hacktip.demo.repository.ChatRoomMemberRepository;
 import hacktip.demo.repository.ChatRoomRepository;
 import hacktip.demo.repository.MemberRepository;

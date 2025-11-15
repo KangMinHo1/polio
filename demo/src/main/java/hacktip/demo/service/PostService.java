@@ -2,66 +2,137 @@ package hacktip.demo.service;
 
 import hacktip.demo.domain.Member;
 import hacktip.demo.domain.Post;
-import hacktip.demo.dto.PostRequestDto;
+import hacktip.demo.dto.postDto.PostCreateRequestDto;
+import hacktip.demo.dto.postDto.PostResponseDto;
+import hacktip.demo.dto.postDto.PostSimpleResponseDto;
+import hacktip.demo.dto.postDto.PostUpdateRequestDto;
 import hacktip.demo.repository.MemberRepository;
 import hacktip.demo.repository.PostRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/**
- * 'POSTS' 관련 비즈니스 로직
- * (사용자의 Member.java 스키마와 호환되도록 수정됨)
- */
+import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.security.access.AccessDeniedException;
+
 @Service
 @RequiredArgsConstructor
 public class PostService {
 
     private final PostRepository postRepository;
-
-    // (중요) 사용자가 업로드한 MemberRepository를 주입받음
     private final MemberRepository memberRepository;
 
     /**
-     * DTO와 인증된 사용자의 이메일을 받아 새 게시글을 생성합니다.
-     *
-     * @param dto   컨트롤러에서 받은 게시글 폼 데이터
-     * @param authorEmail JWT 토큰에서 추출한 사용자의 이메일 (예: "user@example.com")
-     * @return 저장된 Post 엔티티
+     * 1. 게시물 생성
+     * (Service가 DTO와 email을 받아 Entity를 조립)
      */
     @Transactional
-    public Post createPost(PostRequestDto dto, String authorEmail) {
+    public PostResponseDto createPost(PostCreateRequestDto requestDto, String email){
 
-        // 1. JWT 토큰의 이메일(email)로 'Member' 엔티티를 조회
-        //    (사용자의 MemberRepository.java에 findByEmail이 있으므로 정상 동작)
-        Member author = memberRepository.findByEmail(authorEmail)
-                .orElseThrow(() -> new IllegalArgumentException("해당 이메일의 사용자를 찾을 수 없습니다: " + authorEmail));
+        // 1. (인증) 토큰의 email로 작성자(Member) 조회
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        // 2. 새 Post 엔티티 생성
-        Post post = new Post();
+        // 2. (조립) DTO의 내용물과 Member 엔티티를 Post.builder()에 주입
+        Post post = Post.builder()
+                .member(member) // 3. (중요) 엔티티는 DTO가 아닌 Member 객체를 받음
+                .title(requestDto.getTitle())
+                .content(requestDto.getContent())
+                .category(requestDto.getCategory())
+                .build();
 
-        // 3. DTO의 값으로 엔티티 필드 채우기
-        post.setTitle(dto.getTitle());
-        post.setCategory(dto.getCategory());
-        post.setPostType(dto.getPostType());
 
-        // 'content' 필드는 write.js에서 이미 JSON 문자열 또는 일반 텍스트로 가공됨
-        post.setContent(dto.getContent());
+        Post savedPost = postRepository.save(post);
 
-        post.setPortfolioLink(dto.getPortfolioLink()); // 'casestudy'의 경우 null
-
-        // 4. (핵심) 인증 정보로 'author' (Member 엔티티) 설정
-        //    JPA가 author에서 PK (Long memberId)를 추출하여 FK로 사용합니다.
-        post.setAuthor(author);
-
-        // 5. DDL(또는 엔티티)에 정의된 기본값 설정
-        post.setViews(0);
-        post.setIsResolved('N');
-        post.setIsHiredSuccess('N');
-
-        // (createdAt는 @CreationTimestamp가 자동 처리)
-
-        // 6. Repository를 통해 DB에 저장
-        return postRepository.save(post);
+        return new PostResponseDto(savedPost);
     }
+
+    /**
+     * 2. 게시물 전체 목록 조회 (최신순)
+     * (content가 빠진 Simple DTO 사용)
+     */
+    @Transactional // (읽기 전용이지만, Lazy Loading을 위해 @Transactional 사용)
+    public List<PostSimpleResponseDto>  getAllPosts(){
+
+        // 1. 쿼리 메서드 사용 (최신순)
+        List<Post> posts = postRepository.findAllByOrderByCreateDateDesc();
+
+        // 2. (변환) List<Post> -> List<PostSimpleResponseDto>
+        return posts.stream()
+                .map(PostSimpleResponseDto::new)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 3. 게시물 상세 조회 (+ 조회수 1 증가)
+     */
+    @Transactional
+    public PostResponseDto getPostById(Long postId){
+
+        // 1. (조회) PK로 게시물 조회 (없으면 404 예외)
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 Id의 게시물이 없습니다. postId : " + postId));
+
+        // 2. (로직) 조회수 1 증가 (Dirty Checking)
+        post.increaseViewCount();
+
+        // 3. (변환) Post -> PostResponseDto (content 포함)
+        return new PostResponseDto(post);
+    }
+
+
+    /**
+     * 4. 게시물 수정
+     * (수정 권한이 있는지 "인가" 검사 포함)
+     */
+    @Transactional
+    public PostResponseDto updatePost(Long postId, PostUpdateRequestDto requestDto, String email){
+
+        // 1. (조회) 수정할 게시물 조회
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 Id의 게시물이 없습니다. postId : " + postId));
+
+        // 2. (인증) 토큰의 email로 사용자(Member) 조회
+        Member requestingMember = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다,"));
+
+        // 3. (핵심: 인가) "요청한 사용자"와 "게시물 작성자"가 일치하는지 검사
+        if (!post.getMember().getMemberId().equals(requestingMember.getMemberId())) {
+            // 4. (실패) 일치하지 않으면 "접근 거부(403)" 예외 발생
+            throw new AccessDeniedException("이 게시물을 수정할 권한이 없습니다.");
+        }
+
+        // --- (인가 통과) ---
+        post.update(requestDto.getTitle(), requestDto.getContent(), requestDto.getCategory());
+
+        return new PostResponseDto(post);
+    }
+
+    /**
+     * 5. 게시물 삭제
+     * (삭제 권한이 있는지 "인가" 검사 포함)
+     */
+    public void deletePost(Long postId, String email){
+
+        // 1. (조회) 삭제할 게시물 조회
+        Post post = postRepository.findById(postId)
+                .orElseThrow(()-> new IllegalArgumentException("해당 Id의 게시물이 없습니다. postId : " + postId));
+
+        // 2. (인증) 토큰의 email로 사용자(Member) 조회
+        Member requestingMember = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+
+        // 3. (핵심: 인가) "요청한 사용자"와 "게시물 작성자"가 일치하는지 검사
+        if(!post.getMember().getMemberId().equals(requestingMember.getMemberId())){
+            // 4. (실패) 일치하지 않으면 "접근 거부(403)" 예외 발생
+            throw new AccessDeniedException("이 게시물을 삭제할 권한이 없습니다.");
+        }
+
+        // --- (인가 통과) ---
+        // 5. (삭제) DB에서 게시물 삭제
+        postRepository.delete(post);
+    }
+
 }

@@ -1,49 +1,85 @@
 package hacktip.demo.controller;
 
-import hacktip.demo.domain.Post;
-import hacktip.demo.dto.PostRequestDto;
-import hacktip.demo.dto.PostResponseDto;
+import hacktip.demo.dto.postDto.PostCreateRequestDto;
+import hacktip.demo.dto.postDto.PostResponseDto;
+import hacktip.demo.dto.postDto.PostSimpleResponseDto;
+import hacktip.demo.dto.postDto.PostUpdateRequestDto;
 import hacktip.demo.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * 'POSTS' 관련 HTTP 요청을 처리하는 컨트롤러.
- * SecurityConfig에 의해 "/api/posts" 경로는 인증이 필요합니다.
- */
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/posts") // write.js의 API 경로
 @RequiredArgsConstructor
+@RequestMapping("/posts")
 public class PostController {
 
     private final PostService postService;
 
     /**
-     * 새 게시글을 생성합니다. (write.js의 app.api.createPost)
-     *
-     * @param postRequestDto @RequestBody: write.js의 postData 객체 (title, content 등)
-     * @param email @AuthenticationPrincipal: JwtAuthenticationFilter가 검증하여
-     * SecurityContext에 저장한 사용자의 이메일
-     * @return 생성된 게시글의 상세 정보 (PostResponseDto)
+     * 1. 게시물 생성 (POST /posts)
+     * (인증된 사용자만)
      */
-    @PostMapping
-    public ResponseEntity<PostResponseDto> createPost(
-            @Valid @RequestBody PostRequestDto postRequestDto,
-            @AuthenticationPrincipal String email) { // JWT 토큰에서 이메일 추출
+    @PostMapping                                                                                        // 2. (보안) 인증된 사용자 이메일
+    public ResponseEntity<PostResponseDto> createPost(@Valid @RequestBody PostCreateRequestDto requestDto, @AuthenticationPrincipal String email){
+        PostResponseDto responseDto = postService.createPost(requestDto, email);
 
-        // 서비스 레이어를 호출하여 게시글 생성
-        Post newPost = postService.createPost(postRequestDto, email);
-
-        // 생성된 엔티티를 DTO로 변환하여 201 Created 응답 반환
-        return new ResponseEntity<>(PostResponseDto.fromEntity(newPost), HttpStatus.CREATED);
+        // 3. 201 Created 응답과 함께 생성된 게시물 정보 반환
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
-    // TODO: 게시글 조회(@GetMapping), 수정(@PutMapping), 삭제(@DeleteMapping) API 엔드포인트 추가
+    /**
+     * 2. 게시물 전체 목록 조회 (GET /posts)
+     * (누구나)
+     */
+    public ResponseEntity<List<PostSimpleResponseDto>> getAllPosts(){
+        List<PostSimpleResponseDto> posts = postService.getAllPosts();
+
+        // 4. 200 OK 응답과 함께 목록 반환
+        return ResponseEntity.ok(posts);
+    }
+
+
+    /**
+     * 3. 게시물 상세 조회 (GET /posts/{postId})
+     * (누구나)
+     */
+    @GetMapping("/{postId}")
+    public ResponseEntity<PostResponseDto> getPostById(@PathVariable("postId") Long postId){
+        PostResponseDto responseDto = postService.getPostById(postId);
+
+        // 5. 200 OK 응답과 함께 상세 정보 반환
+        return ResponseEntity.ok(responseDto);
+    }
+
+    /**
+     * 4. 게시물 수정 (PATCH /posts/{postId})
+     * (인증된 작성자 본인만)
+     */
+    @PatchMapping("/{postId}")
+    public ResponseEntity<PostResponseDto> updatePost(@PathVariable("postId") Long postId, @Valid @RequestBody PostUpdateRequestDto requestDto, @AuthenticationPrincipal String email){
+        // 7. (인가) 수정 권한 검사는 Service 계층에서 이미 처리 (AccessDeniedException)
+        PostResponseDto responseDto = postService.updatePost(postId, requestDto, email);
+
+        // 8. 200 OK 응답과 함께 수정된 정보 반환
+        return ResponseEntity.ok(responseDto);
+    }
+
+    /**
+     * 5. 게시물 삭제 (DELETE /posts/{postId})
+     * (인증된 작성자 본인만)
+     */
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<String> deletePost(@PathVariable("postId") Long postId, @AuthenticationPrincipal String email){
+
+        postService.deletePost(postId, email);
+
+        return ResponseEntity.ok("게시물이 삭제되었습니다.");
+    }
+
 }

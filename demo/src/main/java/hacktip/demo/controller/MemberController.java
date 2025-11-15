@@ -1,6 +1,9 @@
 package hacktip.demo.controller;
 
 import hacktip.demo.dto.*;// 1. dto 패키지 와일드카드 임포트 (TokenInfo 포함)
+import hacktip.demo.dto.MemberDto.MemberLoginRequestDto;
+import hacktip.demo.dto.MemberDto.MemberSignUpRequestDto;
+import hacktip.demo.dto.MemberDto.MemberSignUpResponseDto;
 import hacktip.demo.service.MemberService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;

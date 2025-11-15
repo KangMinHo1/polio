@@ -4,6 +4,7 @@ import hacktip.demo.config.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; // 1. (임포트) HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -26,33 +27,35 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. CSRF 비활성화 (POST 요청을 위해 필요할 수 있음)
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // 2. JWT를 사용할거니 세션인증 방식은 사용하지 않겠다는 선언
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
                 // 3. HTTP 요청 권한 설정
                 .authorizeHttpRequests(auth -> auth
-                        // 1. === [수정] "/reissue" 경로도 permitAll()에 추가 ===
+                        // (기존) 인증/회원가입/채팅 API
                         .requestMatchers("/signup", "/login", "/reissue").permitAll()
+                        .requestMatchers("/chat/room/{roomId}/messages").authenticated() // (기존 채팅 API)
 
-                        // 그 외의 모든 요청은 인증(authenticated)이 필요함
+                        // 2. === [게시판 규칙 추가] ===
+                        // (조회) GET /posts 와 GET /posts/{postId} 는 누구나(permitAll)
+                        .requestMatchers(HttpMethod.GET, "/posts", "/posts/{postId}").permitAll()
+
+                        // (작성, 수정, 삭제) POST, PATCH, DELETE는 인증(authenticated) 필요
+                        .requestMatchers(HttpMethod.POST, "/posts").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/posts/{postId}").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/posts/{postId}").authenticated()
+                        // =========================
+
+                        // (기존) 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )
 
-                // (선택) 폼 로그인, HTTP Basic 인증 비활성화 (JWT 사용 시)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-
-                // 6. <--- [추가] (가장 중요!) 우리가 만든 JWT 필터를 정식 필터 체인에 등록
-                //      스프링 시큐리티의 기본 로그인 필터(UsernamePasswordAuthenticationFilter)
-                //      "앞(Before)"에 우리가 만든 jwtAuthenticationFilter를 배치합니다.
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
 }

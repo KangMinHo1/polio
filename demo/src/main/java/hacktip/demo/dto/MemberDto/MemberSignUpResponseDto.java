@@ -1,4 +1,4 @@
-package hacktip.demo.dto;
+package hacktip.demo.dto.MemberDto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

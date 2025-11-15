@@ -1,7 +1,7 @@
 package hacktip.demo.controller;
 
-import hacktip.demo.dto.ChatMessageRequestDto;
-import hacktip.demo.dto.ChatMessageResponseDto;
+import hacktip.demo.dto.chatDto.ChatMessageRequestDto;
+import hacktip.demo.dto.chatDto.ChatMessageResponseDto;
 import hacktip.demo.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;

@@ -2,12 +2,12 @@ package hacktip.demo.repository;
 
 import hacktip.demo.domain.Post;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-/**
- * 'POSTS' 테이블에 대한 Spring Data JPA Repository
- */
-@Repository
-public interface PostRepository extends JpaRepository<Post, Long> { // PK는 Long (postId)
-    // 기본적인 CRUD (save, findById, findAll, deleteById 등) 메서드가 자동 제공됩니다.
+import java.util.List;
+import java.util.Optional;
+
+public interface PostRepository extends JpaRepository<Post, Long> {
+    // 2. (추가) 게시물 전체 목록 조회 (최신순 정렬)
+    //    JPA 쿼리 파생: 'CreateDate' 필드를 'Desc'(내림차순)로 정렬하여 'FindAll'
+    List<Post> findAllByOrderByCreateDateDesc();
 }

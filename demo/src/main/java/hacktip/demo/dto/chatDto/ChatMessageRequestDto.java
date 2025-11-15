@@ -1,4 +1,4 @@
-package hacktip.demo.dto;
+package hacktip.demo.dto.chatDto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

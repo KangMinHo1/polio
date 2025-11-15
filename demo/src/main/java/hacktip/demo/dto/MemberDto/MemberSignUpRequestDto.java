@@ -1,4 +1,4 @@
-package hacktip.demo.dto;
+package hacktip.demo.dto.MemberDto;
 
 import hacktip.demo.domain.Member;
 import jakarta.validation.constraints.Email;
