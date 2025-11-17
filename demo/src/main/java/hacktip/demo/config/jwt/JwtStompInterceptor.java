@@ -7,14 +7,13 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
-import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.Collections;
+import hacktip.demo.security.UserDetailsServiceImpl;
 
 @Slf4j
 @Component
@@ -22,6 +21,7 @@ import java.util.Collections;
 public class JwtStompInterceptor implements ChannelInterceptor {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserDetailsServiceImpl userDetailsServiceImpl; // UserDetailsService 주입
 
     /**
      * STOMP 메시지가 전송되기 전에 (preSend) 호출되는 메서드
@@ -29,7 +29,7 @@ public class JwtStompInterceptor implements ChannelInterceptor {
 
     public Message<?> preSend(Message<?> message, MessageChannel channel){
         // 1. StompHeaderAccessor로 메시지 헤더에 접근
-        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
         // 2. (핵심) STOMP의 CONNECT 명령일 때만 JWT 검증 수행
         if(StompCommand.CONNECT.equals(accessor.getCommand())){
@@ -43,10 +43,11 @@ public class JwtStompInterceptor implements ChannelInterceptor {
 
                 String email = jwtTokenProvider.getEmailFromToken(token);
 
-                // 5. (중요) 인증 객체 생성 (권한은 없음)
-                Authentication authentication = new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+                // 5. (중요) UserDetailsServiceImpl을 통해 UserDetails 객체를 가져옴
+                UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(email);
 
-                // 6. (매우 중요) WebSocket 세션에 사용자 인증 정보(Authentication) 저장
+                // 6. (매우 중요) UserDetails 객체를 사용하여 인증 객체 생성 후 WebSocket 세션에 저장
+                Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 //    이후 @MessageMapping에서 Principal로 이 정보를 꺼내 쓸 수 있음
                 accessor.setUser(authentication);
                 log.info("STOMP user authenticated: {}", email);

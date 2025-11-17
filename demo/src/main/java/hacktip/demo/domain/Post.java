@@ -6,7 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.util.ArrayList;
 import java.sql.Timestamp;
+import java.util.List;
 
 @Entity
 @Getter
@@ -46,6 +48,15 @@ public class Post {
 
     @Column(name = "CATEGORY", length = 50)
     private String category;
+
+    // Post와 PostComment의 연관관계 (하나의 게시글은 여러 댓글을 가짐)
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostComment> comments = new ArrayList<>();
+
+    // Post와 PostLike의 연관관계 (하나의 게시글은 여러 좋아요를 가짐)
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostLike> likes = new ArrayList<>();
+
 
     @Builder
     public Post(Member member, String title, String content, String category){

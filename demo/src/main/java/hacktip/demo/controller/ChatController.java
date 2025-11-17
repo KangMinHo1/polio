@@ -2,6 +2,7 @@ package hacktip.demo.controller;
 
 import hacktip.demo.dto.chatDto.ChatMessageRequestDto;
 import hacktip.demo.dto.chatDto.ChatMessageResponseDto;
+import hacktip.demo.security.UserDetailsImpl;
 import hacktip.demo.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -25,7 +26,8 @@ public class ChatController {
      */
     @MessageMapping("/chat/send")
     // 2. (수정) @AuthenticationPrincipal String email 파라미터 추가
-    public void sendMessage(ChatMessageRequestDto requestDto, @AuthenticationPrincipal String email){
+    public void sendMessage(ChatMessageRequestDto requestDto, @AuthenticationPrincipal UserDetailsImpl userDetails){
+        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
         // 1. (DB 저장) DTO를 서비스로 넘겨 메시지를 DB에 저장하고, 응답 DTO를 받음  --> (수정) Service 호출 시, DTO와 함께 인증된 이메일 전달
         ChatMessageResponseDto responseDto = chatService.saveMessage(requestDto, email);
 

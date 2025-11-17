@@ -3,6 +3,7 @@ package hacktip.demo.controller;
 import hacktip.demo.dto.chatDto.ChatMessageResponseDto;
 import hacktip.demo.dto.chatDto.ChatRoom1on1RequestDto;
 import hacktip.demo.dto.chatDto.ChatRoomResponseDto;
+import hacktip.demo.security.UserDetailsImpl;
 import hacktip.demo.service.ChatRoomService;
 import hacktip.demo.service.ChatService;
 import jakarta.validation.Valid;
@@ -33,9 +34,12 @@ public class ChatRoomController {
      */
     // 4. (수정) 엔드포인트 변경: /room -> /room/1on1
     @PostMapping("/room/1on1")
-    public ResponseEntity<ChatRoomResponseDto> findOrCreate1on1Room(@Valid @RequestBody ChatRoom1on1RequestDto requestDto,
-                                                                    @AuthenticationPrincipal String email){
+    public ResponseEntity<ChatRoomResponseDto> findOrCreate1on1Room(
+            @Valid @RequestBody ChatRoom1on1RequestDto requestDto,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ){
 
+        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
         // 6. (수정) 서비스 호출
         ChatRoomResponseDto responseDto = chatRoomService.findOrCreate1on1Room(email, requestDto.getTargetEmail());
 
@@ -50,7 +54,9 @@ public class ChatRoomController {
      * GET /chat/rooms
      */
     @GetMapping("/rooms")
-    public ResponseEntity<List<ChatRoomResponseDto>> getMyRooms(@AuthenticationPrincipal String email){
+    public ResponseEntity<List<ChatRoomResponseDto>> getMyRooms(@AuthenticationPrincipal UserDetailsImpl userDetails){
+        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
+
         // 3. 서비스를 호출하여 '내가 속한 방' 목록 반환
         List<ChatRoomResponseDto> myRooms = chatRoomService.findMyChatRooms(email);
 
@@ -63,8 +69,12 @@ public class ChatRoomController {
      * @param roomId 채팅방 ID
      */
     @GetMapping("/room/{roomId}/messages")
-    public ResponseEntity<List<ChatMessageResponseDto>> getRoomMessages(@PathVariable("roomId") Long roomId, @AuthenticationPrincipal String email){
+    public ResponseEntity<List<ChatMessageResponseDto>> getRoomMessages(
+            @PathVariable("roomId") Long roomId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ){
 
+        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
         // 2. 서비스를 호출하여 메시지 내역을 가져옴 --> // 3. (수정) Service 호출 시, roomId와 함께 인증된 이메일 전달
         List<ChatMessageResponseDto> message = chatService.loadMessage(roomId, email);
 

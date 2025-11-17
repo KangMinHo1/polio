@@ -4,6 +4,7 @@ import hacktip.demo.dto.*;// 1. dto 패키지 와일드카드 임포트 (TokenIn
 import hacktip.demo.dto.MemberDto.MemberLoginRequestDto;
 import hacktip.demo.dto.MemberDto.MemberSignUpRequestDto;
 import hacktip.demo.dto.MemberDto.MemberSignUpResponseDto;
+import hacktip.demo.security.UserDetailsImpl;
 import hacktip.demo.service.MemberService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -50,7 +51,9 @@ public class MemberController {
      * (DB에서 RT 삭제 + 브라우저의 RT 쿠키 만료)
      */
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@AuthenticationPrincipal String email, HttpServletResponse response){
+    public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetailsImpl userDetails, HttpServletResponse response){
+        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
+
         // 1. (DB) 서비스 호출하여 DB에서 Refresh Token 삭제
         memberService.logout(email);
 

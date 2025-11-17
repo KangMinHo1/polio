@@ -1,5 +1,6 @@
 package hacktip.demo.config.jwt;
 
+import hacktip.demo.security.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,12 +9,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 
 /**
  * JWT 토큰을 검증하고,
@@ -25,6 +26,7 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter { // 2. 요청당 한 번만 실행됨
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final UserDetailsServiceImpl userDetailsServiceImpl; // UserDetailsService 주입
 
     // 필터의 핵심 로직
     @Override
@@ -42,11 +44,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { // 2. 요청
             // 6. 토큰이 유효하면, 토큰에서 사용자 이메일(Subject)을 추출
             String email = jwtTokenProvider.getEmailFromToken(token);
 
-            // 7. (핵심) 인증 객체(Authentication) 생성
-            // - 파라미터 1: principal (사용자 식별자, 여기서는 이메일)
-            // - 파라미터 2: credentials (자격 증명, 토큰 방식에선 보통 null)
-            // - 파라미터 3: authorities (권한 목록, 지금은 없음 -> Collections.emptyList())
-            Authentication authentication = new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());
+            // 7. (핵심) UserDetailsServiceImpl을 통해 UserDetails 객체를 가져옴
+            UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(email);
+
+            // 8. UserDetails 객체를 사용하여 인증 객체(Authentication) 생성
+            //    - Principal로 UserDetails 객체 자체를 사용
+            Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
             // 8. (매우 중요) SecurityContextHolder에 인증 객체를 저장
             //    -> 이 요청이 끝날 때까지 "이 사용자는 인증된 사용자"라고 등록하는 것
