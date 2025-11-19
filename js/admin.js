@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     statsTotalUsers: document.getElementById('stats-total-users'),
     statsTotalPosts: document.getElementById('stats-total-posts'),
     statsPostsByCategory: document.getElementById('stats-posts-by-category'),
+    mentorApplicationList: document.getElementById('mentor-application-list'),
   };
 
   function initializeAdminPage() {
@@ -25,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderSiteStats();
     renderUserList();
     renderPostManagementList();
+    renderMentorApplicationList();
   }
 
   // ✅ [수정] app.state 데이터를 직접 사용하도록 변경
@@ -65,20 +67,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     const users = app.state.users || []; // 데이터 없을 경우 대비
     const currentAdminId = app.state.user.id;
 
-    elements.userList.innerHTML = users.map(user => {
-      const isCurrentUser = user.id === currentAdminId;
+    // 현재 로그인한 관리자 자신을 목록에서 제외
+    const usersToDisplay = users.filter(user => user.id !== currentAdminId);
+
+    // [추가] 하위 호환성을 위한 멘토 상태 보정
+    usersToDisplay.forEach(user => {
+      if (user.isMentor === undefined) {
+        user.isMentor = (user.category === '재직자' || user.role === 'admin');
+      }
+    });
+
+    elements.userList.innerHTML = usersToDisplay.map(user => {
+      const mentorBadge = user.isMentor ? '<span class="profile-mentor-badge" style="font-size: 0.7rem; padding: 0.1rem 0.5rem; margin-left: 0.5rem;">멘토</span>' : '';
+      // 멘토인 경우에만 '멘토 취소' 버튼을 생성합니다.
+      const mentorButtonHTML = user.isMentor 
+        ? `<button class="btn btn--ghost btn-toggle-mentor" data-user-id="${user.id}" style="margin-left: 0.5rem;">멘토 취소</button>`
+        : '';
+        
       return `
       <li class="list-item">
         <div class="item-info">
-          <div class="item-title">${user.id} (${user.name} / ${user.email})</div>
-          <div class="item-meta">카테고리: ${user.category}</div>
+          <div class="item-title">${user.id} (${user.name} / ${user.email})${mentorBadge}</div>
         </div>
         <div class="item-actions">
-          <select class="select role-select" data-user-id="${user.id}" ${isCurrentUser ? 'disabled' : ''}>
+          <select class="select category-select" data-user-id="${user.id}" ${user.role === 'admin' ? 'disabled' : ''} style="width: 100px;">
+            <option value="취준생" ${user.category === '취준생' ? 'selected' : ''}>취준생</option>
+            <option value="재직자" ${user.category === '재직자' ? 'selected' : ''}>재직자</option>
+          </select>
+          <select class="select role-select" data-user-id="${user.id}" style="width: 90px; margin-left: 0.5rem;">
             <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
             <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
           </select>
-          <button class="btn btn--danger btn-delete-user" data-user-id="${user.id}" ${isCurrentUser ? 'disabled' : ''}>
+          ${mentorButtonHTML}
+          <button class="btn btn--danger btn-delete-user" data-user-id="${user.id}" style="margin-left: 0.5rem;">
             삭제
           </button>
         </div>
@@ -93,6 +114,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.userList.querySelectorAll('.role-select').forEach(select => {
        select.removeEventListener('change', handleRoleChange); // 기존 리스너 제거
       select.addEventListener('change', handleRoleChange);
+    });
+    elements.userList.querySelectorAll('.btn-toggle-mentor').forEach(button => {
+      button.removeEventListener('click', handleMentorStatusChange);
+      button.addEventListener('click', handleMentorStatusChange);
+    });
+    elements.userList.querySelectorAll('.category-select').forEach(select => {
+      select.removeEventListener('change', handleCategoryChange);
+      select.addEventListener('change', handleCategoryChange);
     });
   }
 
@@ -120,6 +149,69 @@ document.addEventListener('DOMContentLoaded', async () => {
        button.removeEventListener('click', handleDeletePost); // 기존 리스너 제거
       button.addEventListener('click', handleDeletePost);
     });
+  }
+
+  async function renderMentorApplicationList() {
+    if (!elements.mentorApplicationList) return;
+
+    const applications = await app.api.fetchMentorApplications();
+    const pendingApplications = applications.filter(a => a.status === 'pending');
+
+    if (pendingApplications.length === 0) {
+      elements.mentorApplicationList.innerHTML = '<li>새로운 멘토 신청이 없습니다.</li>';
+      return;
+    }
+
+    elements.mentorApplicationList.innerHTML = pendingApplications.map(app => {
+      let resumeHTML = '';
+      if (app.resume) {
+        resumeHTML = `
+          <div class="item-meta" style="margin-top: 0.75rem; display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; font-size: 0.85rem;">
+            <strong style="color: var(--text-secondary);">직장:</strong> <span>${app.resume.company || '-'}</span>
+            <strong style="color: var(--text-secondary);">경력:</strong> <span>${app.resume.experience || '-'}</span>
+            <strong style="color: var(--text-secondary);">기술:</strong> <span>${app.resume.skills || '-'}</span>
+          </div>
+          ${app.resume.projectImage ? `<div style="margin-top: 1rem;"><strong style="font-size: 0.85rem; color: var(--text-secondary); display: block; margin-bottom: 0.5rem;">첨부 이미지:</strong><img src="${app.resume.projectImage}" alt="프로젝트 이미지" style="max-width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-light);"></div>` : ''}
+        `;
+      }
+      return `
+      <li class="list-item">
+        <div class="item-info">
+          <div class="item-title">${app.userId} 님의 멘토 신청</div>
+          <div class="item-meta">
+            <span>신청일: ${window.CommunityApp.utils.formatDate(app.createdAt)}</span>
+          </div>
+          ${resumeHTML}
+        </div>
+        <div class="item-actions">
+          <a href="profile.html?user=${app.userId}" class="btn btn--ghost" target="_blank">프로필 보기</a>
+          <button class="btn btn--success btn-approve-mentor" data-user-id="${app.userId}">승인</button>
+          <button class="btn btn--danger btn-reject-mentor" data-user-id="${app.userId}">거절</button>
+        </div>
+      </li>
+      `;
+    }).join('');
+
+    elements.mentorApplicationList.querySelectorAll('.btn-approve-mentor').forEach(button => {
+      button.addEventListener('click', handleApplicationDecision);
+    });
+    elements.mentorApplicationList.querySelectorAll('.btn-reject-mentor').forEach(button => {
+      button.addEventListener('click', handleApplicationDecision);
+    });
+  }
+
+  async function handleApplicationDecision(e) {
+    const userId = e.target.dataset.userId;
+    const isApprove = e.target.classList.contains('btn-approve-mentor');
+    const actionText = isApprove ? '승인' : '거절';
+
+    if (confirm(`'${userId}' 님의 멘토 신청을 ${actionText}하시겠습니까?`)) {
+      const newStatus = isApprove ? 'approved' : 'rejected';
+      await app.api.updateMentorApplicationStatus(userId, newStatus);
+      app.utils.showNotification(`멘토 신청을 ${actionText} 처리했습니다.`, 'success');
+      await app.initialize(); // 데이터 새로고침
+      initializeAdminPage(); // 페이지 다시 렌더링
+    }
   }
 
   async function handleDeleteUser(e) {
@@ -176,6 +268,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     } else {
         e.target.value = originalRole; // Revert select value on cancel
+    }
+  }
+
+  async function handleMentorStatusChange(e) {
+    const userId = e.target.dataset.userId;
+    const user = app.state.users.find(u => u.id === userId);
+    if (!user) return;
+
+    const actionText = user.isMentor ? '멘토 자격을 해제' : '멘토로 지정';
+    if (confirm(`'${userId}' 사용자를 ${actionText}하시겠습니까?`)) {
+        try {
+            await app.api.toggleUserMentorStatus(userId);
+            app.utils.showNotification('사용자 멘토 상태가 변경되었습니다.', 'success');
+            await app.initialize();
+            initializeAdminPage();
+        } catch (error) {
+            app.utils.showNotification('멘토 상태 변경에 실패했습니다.', 'danger');
+        }
+    }
+  }
+
+  async function handleCategoryChange(e) {
+    const userId = e.target.dataset.userId;
+    const newCategory = e.target.value;
+    const user = app.state.users.find(u => u.id === userId);
+    if (!user) return;
+
+    const originalCategory = user.category;
+
+    if (confirm(`'${userId}' 사용자의 직업 상태를 '${newCategory}'(으)로 변경하시겠습니까?`)) {
+        try {
+            await app.api.updateUserCategory(userId, newCategory);
+            app.utils.showNotification('사용자 직업 상태가 변경되었습니다.', 'success');
+            await app.initialize();
+            initializeAdminPage();
+        } catch (error) {
+            app.utils.showNotification('상태 변경에 실패했습니다.', 'danger');
+            e.target.value = originalCategory;
+        }
+    } else {
+        e.target.value = originalCategory;
     }
   }
 

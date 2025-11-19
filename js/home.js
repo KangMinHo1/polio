@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     postList.innerHTML = latestPosts.map(post => `
-      <li class="post-item" data-post-id="${post.id}" onclick="location.href='posts.html#post-${post.id}'">
+      <li class="post-item" data-post-id="${post.id}" onclick="location.href='post-detail.html?id=${post.id}'">
         <div class="post-item-title">[${post.category}] ${post.title}</div>
         <div class="post-item-meta">
            <span>(${post.authorCategory || '사용자'}) ${post.author}</span> •
@@ -173,6 +173,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     `).join('');
   }
 
+  // ✅ [추가] 인기 기술 스택 차트 렌더링 함수
+  async function renderTrendChart() {
+    const techCtx = document.getElementById('home-popular-tech-chart');
+    if (!techCtx) return;
+
+    try {
+      const trends = await app.api.calculatePortfolioTrends();
+      const techData = trends.popularTechStacks;
+
+      if (techData && techData.length > 0) {
+        new Chart(techCtx, {
+          type: 'bar',
+          data: {
+            labels: techData.map(item => item.key),
+            datasets: [{
+              label: '언급 횟수',
+              data: techData.map(item => item.value),
+              backgroundColor: [
+                'rgba(255, 99, 132, 0.5)',
+                'rgba(54, 162, 235, 0.5)',
+                'rgba(255, 206, 86, 0.5)',
+                'rgba(75, 192, 192, 0.5)',
+                'rgba(153, 102, 255, 0.5)',
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: { display: false },
+              title: { display: false }
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                ticks: { stepSize: 1 }
+              }
+            }
+          }
+        });
+      } else {
+        techCtx.parentElement.innerHTML = '<p>아직 데이터가 충분하지 않습니다.</p>';
+      }
+    } catch (error) {
+      console.error("Error rendering trend chart:", error);
+      techCtx.parentElement.innerHTML = '<p>차트 로딩에 실패했습니다.</p>';
+    }
+  }
+
   function initializeHomePage() {
     renderProfileSummary();
     renderOnlineMentors(); // ✅ 온라인 멘토 로드
@@ -181,6 +233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderImportantPosts();
     renderLatestPosts();
     renderLatestCaseStudies();
+    renderTrendChart(); // ✅ 차트 렌더링 함수 호출
   }
 
   initializeHomePage();

@@ -74,17 +74,15 @@ function renderUserComments(userComments, allPosts) {
 }
 
 function renderBookmarks(allPosts, currentUser, profileUser) {
-    const bookmarkCard = document.getElementById('bookmark-card');
+    const bookmarksTabBtn = document.getElementById('bookmarks-tab-btn');
+    const bookmarksTabContent = document.getElementById('tab-content-bookmarks');
     const bookmarksList = document.getElementById('profile-bookmarks-list');
     
     if (!currentUser || currentUser.id !== profileUser.id) {
-        if (bookmarkCard) bookmarkCard.style.display = 'none';
-        // JS로 2열 그리드 강제 (1024px 이상일 때만)
-        if (window.innerWidth > 1024) { 
-           document.querySelector('.profile-activity').style.gridTemplateColumns = 'repeat(2, 1fr)';
-        }
+        if (bookmarksTabBtn) bookmarksTabBtn.style.display = 'none';
         return;
     }
+    if (bookmarksTabBtn) bookmarksTabBtn.style.display = 'inline-block';
 
     if (!bookmarksList) return;
 
@@ -141,13 +139,13 @@ function setupPostListEventHandlers(currentUser, profileUser) {
     });
 }
 
-async function setupMentorToggle(app, profileUser, currentUser, isTrustedMentor) {
+async function setupMentorToggle(app, profileUser, currentUser, isMentor) {
     const toggleArea = document.getElementById('mentor-status-toggle-area');
     const toggleInput = document.getElementById('mentor-status-toggle');
 
     if (!toggleArea || !toggleInput) return;
 
-    if (isTrustedMentor && currentUser && currentUser.id === profileUser.id) {
+    if (isMentor && currentUser && currentUser.id === profileUser.id) {
         toggleArea.style.display = 'block';
 
         const onlineMentors = await app.api.getMentorStatusList();
@@ -170,6 +168,53 @@ async function setupMentorToggle(app, profileUser, currentUser, isTrustedMentor)
     }
 }
 
+async function setupMentorApplication(app, profileUser, currentUser, isMentor) {
+    const applicationArea = document.getElementById('mentor-application-area');
+    if (!applicationArea || !currentUser || currentUser.id !== profileUser.id || isMentor) {
+        if(applicationArea) applicationArea.style.display = 'none';
+        return;
+    }
+
+    applicationArea.style.display = 'block';
+    const applications = await app.api.fetchMentorApplications();
+    const myApplication = applications.find(app => app.userId === currentUser.id);
+
+    if (myApplication) {
+        if (myApplication.status === 'pending') {
+            applicationArea.innerHTML = `<p style="font-size: 0.9rem; color: var(--text-secondary);">🚀 멘토 신청이 접수되어 검토 중입니다.</p>`;
+        } else if (myApplication.status === 'rejected') {
+            applicationArea.innerHTML = `
+                <p style="font-size: 0.9rem; color: var(--color-danger); margin-bottom: 0.5rem;">멘토 신청이 반려되었습니다. 내용을 보완하여 다시 신청할 수 있습니다.</p>
+                <button id="btn-apply-mentor" class="btn btn--primary">🚀 다시 신청하기</button>
+            `;
+        }
+        // 'approved' 상태는 isMentor가 true가 되어 이 함수가 실행되지 않으므로 처리 불필요
+    } else {
+        applicationArea.innerHTML = `<button id="btn-apply-mentor" class="btn btn--primary">🚀 멘토 신청하기</button>`;
+    }
+    
+    // 모달 관련 요소 및 이벤트 리스너 연결
+    // '신규 신청' 또는 '다시 신청하기' 버튼이 화면에 존재할 경우에만 실행됩니다.
+    const applyBtn = document.getElementById('btn-apply-mentor');
+    if (!applyBtn) return; // 버튼이 없으면(예: 검토중 상태) 아래 로직을 실행하지 않습니다.
+    
+    const applyForm = document.getElementById('mentor-apply-form');
+    
+    // 멘토 신청 폼은 이제 별도 페이지가 없으므로, 폼 제출 시 바로 API를 호출합니다.
+    // 간단한 이력 정보 없이 신청만 하는 방식으로 변경합니다.
+    applyBtn.addEventListener('click', async () => {
+        if (confirm('멘토로 활동을 신청하시겠습니까? 관리자 검토 후 승인됩니다.')) {
+            try {
+                await app.api.createMentorApplication(currentUser.id); // 이력서 정보 없이 신청
+                app.utils.showNotification('멘토 신청이 완료되었습니다. 검토 후 반영됩니다.', 'success');
+                location.reload();
+            } catch (error) {
+                app.utils.showNotification(error.message || '멘토 신청에 실패했습니다.', 'danger');
+            }
+        }
+    });
+}
+
 
 // --- 페이지 초기화 로직 ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -186,8 +231,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         mentorCount: document.getElementById('profile-mentor-count'),
         insightCount: document.getElementById('profile-insight-count'),
         postsList: document.getElementById('profile-posts-list'),
-        commentsList: document.getElementById('profile-comments-list')
+        commentsList: document.getElementById('profile-comments-list'),
+        resumeCard: document.getElementById('resume-card'),
+        editResumeBtn: document.getElementById('edit-resume-btn'),
+        resumeView: document.getElementById('resume-view'),
+        resumeCompany: document.getElementById('resume-company'),
+        resumeExperience: document.getElementById('resume-experience'),
+        resumeSkills: document.getElementById('resume-skills'),
+        resumeImageSection: document.getElementById('resume-image-section'),
+        resumeImage: document.getElementById('resume-image'),
+        bookmarkCard: document.getElementById('bookmark-card'),
     };
+    elements.noResumeNotice = document.getElementById('no-resume-notice');
 
     const urlParams = new URLSearchParams(window.location.search);
     const targetUserId = urlParams.get('user');
@@ -207,6 +262,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!profileUser) {
             elements.userId.textContent = '존재하지 않는 사용자입니다.';
             return;
+        }
+
+        // [수정] 하위 호환성을 위한 멘토 상태 보정
+        // isMentor 속성이 없는 구버전 데이터의 경우, 재직자나 관리자이면 멘토로 간주합니다.
+        if (profileUser.isMentor === undefined) {
+            profileUser.isMentor = (profileUser.category === '재직자' || profileUser.role === 'admin');
         }
 
         elements.userId.textContent = profileUser.id;
@@ -241,31 +302,92 @@ document.addEventListener('DOMContentLoaded', async () => {
         elements.insightCount.textContent = totalInsights;
 
         // --- 배지 렌더링 ---
+        // isTrustedMentor는 이제 멘토 자격 여부가 아닌, '신뢰도 높은' 멘토임을 나타내는 시각적 배지 표시용으로만 사용됩니다.
         if (hiredMentorCount > 0) {
             elements.userBadge.textContent = `🚀 취업시킨 멘토 (${hiredMentorCount}회)`;
             elements.userBadge.className = 'profile-mentor-badge';
             elements.userBadge.style.display = 'inline-block';
-            isTrustedMentor = true;
-        } else if ((profileUser.category === '재직자' || profileUser.role === 'admin') && totalBestAnswers >= 5) {
-            elements.userBadge.textContent = '🏅 신뢰하는 재직자';
+        } else if (profileUser.isMentor && totalBestAnswers >= 5) {
+            elements.userBadge.textContent = '🏅 신뢰하는 멘토';
             elements.userBadge.className = 'profile-trust-badge';
             elements.userBadge.style.display = 'inline-block';
-            isTrustedMentor = true;
-        } else if (profileUser.category === '재직자' || profileUser.role === 'admin') {
-            // "신뢰" 배지는 없지만 멘토 자격은 됨 (예: 관리자)
-            isTrustedMentor = true;
-            elements.userBadge.style.display = 'none';
+        } else if (profileUser.isMentor) {
+            elements.userBadge.textContent = '멘토';
+            elements.userBadge.className = 'profile-mentor-badge';
+            elements.userBadge.style.display = 'inline-block';
         } else {
-            elements.userBadge.style.display = 'none';
+            if (elements.userBadge) elements.userBadge.style.display = 'none';
         }
         
         // --- 멘토 토글 설정 ---
-        await setupMentorToggle(app, profileUser, currentUser, isTrustedMentor);
+        // 멘토 기능 활성화 여부는 profileUser.isMentor 값으로 직접 판단합니다.
+        await setupMentorToggle(app, profileUser, currentUser, profileUser.isMentor);
+        await setupMentorApplication(app, profileUser, currentUser, profileUser.isMentor);
+        
+        const applications = await app.api.fetchMentorApplications();
+        const userApplication = applications.find(a => a.userId === profileUser.id);
+
+        // 멘토이거나, 자신의 프로필을 볼 때만 이력서 카드 표시
+        if (profileUser.isMentor || (currentUser && currentUser.id === profileUser.id)) {
+            elements.resumeCard.style.display = 'block';
+        }
+
+        if (userApplication && userApplication.resume) {
+            // 이력서 정보가 있을 때
+            elements.resumeView.style.display = 'block';
+            elements.noResumeNotice.style.display = 'none';
+            elements.resumeCompany.textContent = userApplication.resume.company || '정보 없음';
+            elements.resumeExperience.textContent = userApplication.resume.experience || '정보 없음';
+            elements.resumeSkills.textContent = userApplication.resume.skills || '정보 없음';
+
+            if (userApplication.resume.projectImage) {
+                elements.resumeImage.src = userApplication.resume.projectImage;
+                elements.resumeImageSection.style.display = 'block';
+            } else {
+                elements.resumeImageSection.style.display = 'none';
+            }
+        } else {
+            // 이력서 정보가 없을 때
+            elements.resumeView.style.display = 'none';
+            elements.noResumeNotice.style.display = 'block';
+        }
+        // 프로필 주인이 본인일 경우, 이력서 작성/수정 버튼 표시
+        if (currentUser && currentUser.id === profileUser.id) {
+            elements.editResumeBtn.style.display = 'inline-flex';
+            elements.editResumeBtn.textContent = (userApplication && userApplication.resume) ? '✏️ 수정하기' : '✏️ 작성하기';
+            elements.editResumeBtn.addEventListener('click', () => {
+                window.location.href = 'edit-resume.html';
+            });
+        }
 
         // --- 목록 렌더링 ---
         renderUserPosts(userPosts, currentUser, profileUser);
         renderUserComments(userComments, allPosts);
         renderBookmarks(allPosts, currentUser, profileUser);
+
+        // --- 탭 기능 설정 ---
+        const tabContainer = document.querySelector('.profile-tabs');
+        if (tabContainer) {
+            tabContainer.addEventListener('click', (e) => {
+                if (e.target.matches('.tab-btn')) {
+                    const tabName = e.target.dataset.tab;
+
+                    // 모든 탭 버튼과 컨텐츠에서 active 클래스 제거
+                    tabContainer.querySelectorAll('.tab-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+
+                    // 클릭된 탭과 컨텐츠에 active 클래스 추가
+                    e.target.classList.add('active');
+                    const activeContent = document.getElementById(`tab-content-${tabName}`);
+                    if (activeContent) activeContent.classList.add('active');
+                }
+            });
+        }
+
         setupPostListEventHandlers(currentUser, profileUser);
     }
 

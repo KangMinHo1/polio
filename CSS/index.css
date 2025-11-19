@@ -56,6 +56,30 @@
   border-color: var(--color-primary);
   box-shadow: 0 2px 4px rgba(0,0,0,0.03);
 }
+
+/* Call to Action Card */
+.call-to-action-card .card-content {
+  padding: 2.5rem !important;
+  text-align: center;
+}
+.call-to-action-card h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+.call-to-action-card p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.call-to-action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
 @media (max-width: 1024px) {
   .main-grid { grid-template-columns: 1fr; }
 }

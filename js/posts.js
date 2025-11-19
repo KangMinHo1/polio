@@ -44,26 +44,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderAll();
 
     function showPostFromHash() {
-      const hash = window.location.hash;
-      if (hash && hash.startsWith('#post-')) {
-        const postId = parseInt(hash.substring(6), 10);
-        if (!isNaN(postId)) {
-          const postExists = app.state.posts.some(p => p.id === postId);
-          if (postExists) {
-             updateFilteredPosts();
-             const postIndex = pageState.filteredPosts.findIndex((p) => p.id === postId);
-             if (postIndex !== -1) {
-                const targetPage = Math.floor(postIndex / pageState.postsPerPage) + 1;
-                pageState.currentPage = targetPage;
-                renderAll();
-             } else { history.replaceState(null, null, ' '); }
-             showPostPreview(postId);
-          } else {
-             history.replaceState(null, null, ' ');
-             if(elements.postPreview) elements.postPreview.innerHTML = '<p>해당 게시글을 찾을 수 없습니다.</p>';
-          }
-        }
-      }
+      // 상세 페이지가 분리되었으므로 hash를 이용한 미리보기 기능은 제거합니다.
+      // 페이지 로딩 시 특정 게시글로 스크롤이 필요하다면 다른 방식으로 구현해야 합니다.
+      // 예: URL 파라미터(?postId=123)를 읽고 해당 post-item으로 스크롤
+      // 하지만 현재 요구사항은 페이지 이동이므로 이 함수는 비워둡니다.
     }
     showPostFromHash();
   }
@@ -149,7 +133,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (elements.postList) {
       elements.postList.addEventListener('click', (e) => {
         const postItem = e.target.closest('.post-item');
-        if (postItem) { showPostPreview(parseInt(postItem.dataset.postId, 10)); }
+        if (postItem) {
+          const postId = postItem.dataset.postId;
+          window.location.href = `post-detail.html?id=${postId}`;
+        }
       });
     }
   }
@@ -176,156 +163,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const authorId = e.target.dataset.authorId;
     if (!authorId) return;
     window.location.href = `profile.html?user=${encodeURIComponent(authorId)}`;
-  }
-
-  async function showPostPreview(postId) {
-    const post = app.state.posts.find((p) => p.id === postId);
-    if (!post || !elements.postPreview) return;
-
-    const postType = post.postType || 'feedback';
-    const authorCategory = post.authorCategory || '사용자';
-    const currentUser = app.state.user;
-
-    // Increment views only when showing preview
-    if (!elements.layout.classList.contains('is-detail-view') ||
-        (elements.layout.classList.contains('is-detail-view') &&
-         !document.querySelector(`.post-item[data-post-id="${postId}"]`)?.classList.contains('is-active')))
-    {
-        post.views = (post.views || 0) + 1;
-        updatePostItemInList(post);
-        app.api.updatePost(postId, { views: post.views });
-    }
-
-    elements.layout.classList.add('is-detail-view');
-    document.querySelectorAll('.post-item').forEach((item) => {
-      item.classList.remove('is-active');
-    });
-    const currentPostItem = document.querySelector(`.post-item[data-post-id="${postId}"]`);
-    if (currentPostItem) {
-      currentPostItem.classList.add('is-active');
-      currentPostItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    let portfolioLinkHTML = '';
-    if (post.portfolioLink) {
-        portfolioLinkHTML = `<a href="${post.portfolioLink.startsWith('http') ? post.portfolioLink : 'http://' + post.portfolioLink}" class="btn btn--primary" target="_blank" rel="noopener noreferrer" style="margin-bottom: 1.5rem; display: inline-block;">🔗 포트폴리오/이력서 보러가기</a>`;
-    }
-    let fileAttachmentHTML = '';
-    if (post.file && post.file.name && post.file.content) {
-      fileAttachmentHTML = `<div class="post-attachment"><div class="post-attachment-title">📎 첨부파일</div><a href="${post.file.content}" download="${post.file.name}" class="post-attachment-link">${post.file.name} 다운로드</a></div>`;
-    }
-    const authorHTML = `<span class="post-author-link" data-author-id="${post.author}" title="클릭해서 프로필 보기">(${authorCategory}) ${post.author}</span>`;
-
-    let resolvedHTML = '';
-    const isPostAuthor = currentUser && currentUser.id === post.author;
-
-    if (postType === 'feedback') {
-        if (post.isHiredSuccess) { resolvedHTML = `<div class="post-hired-badge">🎉 취업 성공 사례</div>`; }
-        else if (post.isResolved) { resolvedHTML = `<div class="post-resolved-badge">✅ 피드백이 해결된 요청입니다.</div>`; }
-        else if (isPostAuthor) {
-            const editButtonHTML = `<a href="write.html?edit=${post.id}" class="btn btn--ghost" style="margin-right: 0.5rem;">✏️ 수정하기</a>`;
-            resolvedHTML = `<div class="post-actions" style="margin-bottom: 1.5rem;">${editButtonHTML}<button id="mark-resolved-btn" class="btn btn--success" data-post-id="${post.id}">✅ 피드백 완료 (해결됨으로 표시)</button></div>`;
-        }
-    }
-
-    let postActionsHTML = '';
-    let bookmarkButtonHTML = '';
-    if (currentUser) {
-        const isBookmarked = post.bookmarkedBy && post.bookmarkedBy.includes(currentUser.id);
-        bookmarkButtonHTML = `<button id="btn-bookmark" class="btn btn--ghost btn-bookmark ${isBookmarked ? 'is-active' : ''}" data-post-id="${post.id}">${isBookmarked ? '📌 스크랩 취소' : '📌 스크랩하기'}</button>`;
-    }
-    if (postType === 'casestudy') {
-        const hasInsight = currentUser && post.insights && post.insights.includes(currentUser.id);
-        postActionsHTML = `<button id="btn-insight-post" class="btn btn--ghost btn-insight ${hasInsight ? 'is-active' : ''}" data-post-id="${post.id}" ${!currentUser ? 'disabled' : ''}>💡 인사이트+ (${(post.insights || []).length})</button>`;
-    } else {
-        const hasLiked = pageState.likedPostIds.includes(postId);
-        postActionsHTML = `<button id="like-button-${post.id}" class="btn ${hasLiked ? 'btn--primary' : ''}">❤️ 좋아요 (${post.likes || 0})</button>`;
-    }
-
-    // 본문 렌더링 로직 (JSON 파싱)
-    let contentHTML = '';
-    let feedbackTagsHTML = '';
-
-    if (postType === 'feedback') {
-        try {
-            const data = JSON.parse(post.content);
-            const escapeHTML = (str) => (str || '').replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
-
-            if (data.projects && Array.isArray(data.projects)) {
-                contentHTML += data.projects.map((project, index) => {
-                    let projectHTML = `<h3 class="template-header">프로젝트 ${index + 1}: ${escapeHTML(project.title)}</h3>`;
-                    if(project.link) projectHTML += `<p class="template-field"><strong>링크:</strong> <a href="${project.link.startsWith('http') ? project.link : 'http://' + project.link}" target="_blank" rel="noopener noreferrer">${escapeHTML(project.link)}</a></p>`;
-                    if(project.techStack) projectHTML += `<p class="template-field"><strong>기술 스택:</strong> ${escapeHTML(project.techStack)}</p>`;
-                    if(project.desc) projectHTML += `<div class="template-content-box">${escapeHTML(project.desc)}</div>`;
-                    return projectHTML;
-                }).join('');
-            }
-
-            if(data.questions) {
-                 contentHTML += `<h3 class="template-header">가장 피드백 받고 싶은 점</h3>`;
-                 contentHTML += `<div class="template-content-box is-question">${escapeHTML(data.questions)}</div>`;
-            }
-
-            // 피드백 요청 태그 렌더링
-            if (data.feedbackTags && data.feedbackTags.length > 0) {
-                feedbackTagsHTML = `
-                  <h3 class="template-header" style="margin-top: 2rem;">주요 요청 분야</h3>
-                  <div class="post-tags">
-                    ${data.feedbackTags.map(tag => `<span class="post-tag">#${escapeHTML(tag)}</span>`).join('')}
-                  </div>
-                `;
-            }
-
-            if (contentHTML.trim() === '') { throw new Error('Fallback to old data'); }
-        } catch (e) { contentHTML = post.content.replace(/\n/g, '<br>'); }
-    } else { contentHTML = post.content.replace(/\n/g, '<br>'); }
-
-
-    elements.postPreview.innerHTML = `
-        <h1>${post.title}</h1>
-        <div class="post-meta">
-            <span>[${post.category}]</span>
-            <span>작성자: ${authorHTML}</span>
-            <span>${app.utils.formatDate(post.createdAt)}</span>
-        </div>
-        ${resolvedHTML}
-        ${portfolioLinkHTML}
-        ${fileAttachmentHTML}
-        <div class="post-content">
-            ${contentHTML}
-            ${feedbackTagsHTML} </div>
-        <div class="post-actions">
-            ${postActionsHTML}
-            ${bookmarkButtonHTML}
-        </div>
-        <div class="comment-section">
-          <h3 class="comment-title">💬 ${postType === 'casestudy' ? '토론' : '피드백'}</h3>
-          <form id="comment-form" class="comment-form">
-            <textarea id="comment-content" rows="3" placeholder="${currentUser ? (postType === 'casestudy' ? '의견을 남겨주세요...' : '피드백을 남겨주세요... (예: @admin)') : '로그인 후 댓글을 남길 수 있습니다.'}" ${!currentUser ? 'disabled' : ''}></textarea>
-            <div class="comment-form-actions">
-              <button type="submit" class="btn btn--primary" ${!currentUser ? 'disabled' : ''}>${postType === 'casestudy' ? '의견 등록' : '피드백 등록'}</button>
-            </div>
-          </form>
-          <ul id="comment-list" class="comment-list"><li>댓글 로딩 중...</li></ul>
-        </div>
-    `;
-
-    // --- 이벤트 리스너 동적 바인딩 ---
-    const authorLink = elements.postPreview.querySelector('.post-author-link');
-    if (authorLink) authorLink.addEventListener('click', handleAuthorClick);
-    const markResolvedBtn = document.getElementById('mark-resolved-btn');
-    if (markResolvedBtn) markResolvedBtn.addEventListener('click', () => handleMarkAsResolved(post.id));
-    const likeButton = document.getElementById(`like-button-${post.id}`);
-    if (likeButton) likeButton.addEventListener('click', () => handleLikeClick(post.id));
-    const insightPostBtn = document.getElementById('btn-insight-post');
-    if (insightPostBtn) insightPostBtn.addEventListener('click', () => handleInsightPostClick(post.id));
-    const bookmarkBtn = document.getElementById('btn-bookmark');
-    if (bookmarkBtn) bookmarkBtn.addEventListener('click', () => handleBookmarkClick(post.id));
-
-    window.location.hash = `post-${postId}`;
-    loadComments(post);
-    const commentForm = document.getElementById('comment-form');
-    if (commentForm) commentForm.addEventListener('submit', (e) => handleCommentSubmit(e, post));
   }
 
   async function loadComments(post) { /* ... (이전과 동일) ... */ }

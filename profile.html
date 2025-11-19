@@ -32,6 +32,9 @@
                             </label>
                         </label>
                     </div>
+                    <div id="mentor-application-area" style="display: none; margin-top: 1rem;">
+                        <!-- JS를 통해 내용이 채워집니다 -->
+                    </div>
                 </div>
                 <div class="profile-stats">
                     <div class="stat-item">
@@ -53,32 +56,60 @@
                 </div>
             </div>
 
-            <div class="profile-activity">
-                <div class="card">
-                    <div class="card-header"><h2 class="card-title">📝 작성한 글</h2></div>
-                    <div class="card-content">
-                        <ul id="profile-posts-list" class="post-list profile-list">
-                            <li>요청글을 불러오는 중...</li>
-                        </ul>
+            <!-- 이력서 정보 카드 (멘토인 경우 표시) -->
+            <div id="resume-card" class="card" style="display: none; margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <h2 class="card-title">📄 이력서</h2>
+                    <button id="edit-resume-btn" class="btn btn--ghost" style="display: none;">
+                        ✏️ 수정하기
+                    </button>
+                </div>
+                <div class="card-content resume-content">
+                    <div id="resume-view">
+                        <div class="resume-item">
+                            <h4><span class="resume-icon">🏢</span> 현재 직장 및 직책</h4>
+                            <p id="resume-company">정보 없음</p>
+                        </div>
+                        <div class="resume-item">
+                            <h4><span class="resume-icon">⏳</span> 총 경력</h4>
+                            <p id="resume-experience">정보 없음</p>
+                        </div>
+                        <div class="resume-item">
+                            <h4><span class="resume-icon">🛠️</span> 주요 기술 및 전문 분야</h4>
+                            <p id="resume-skills">정보 없음</p>
+                        </div>
+                        <div id="resume-image-section" class="resume-item" style="display: none;">
+                            <h4><span class="resume-icon">🖼️</span> 대표 프로젝트/이미지</h4>
+                            <img id="resume-image" src="" alt="대표 이미지" style="max-width: 100%; margin-top: 0.5rem; border-radius: var(--radius-md);">
+                        </div>
                     </div>
+                    <p id="no-resume-notice" style="display: none; color: var(--text-secondary); text-align: center; padding: 1rem;">아직 작성된 이력서 정보가 없습니다. '작성하기' 버튼을 눌러 멘토 프로필을 완성해주세요.</p>
+                </div>
+            </div>
+
+            <div class="profile-activity card">
+                <div class="profile-tabs">
+                    <button class="tab-btn active" data-tab="posts">📝 작성한 글</button>
+                    <button class="tab-btn" data-tab="comments">💬 남긴 댓글</button>
+                    <button class="tab-btn" data-tab="bookmarks" id="bookmarks-tab-btn" style="display: none;">📌 내 스크랩북</button>
                 </div>
 
-                <div class="card">
-                    <div class="card-header"><h2 class="card-title">💬 남긴 댓글</h2></div>
-                    <div class="card-content">
-                        <ul id="profile-comments-list" class="post-list profile-list">
-                            <li>댓글을 불러오는 중...</li>
-                        </ul>
-                    </div>
+                <div id="tab-content-posts" class="tab-content active">
+                    <ul id="profile-posts-list" class="post-list profile-list">
+                        <li>요청글을 불러오는 중...</li>
+                    </ul>
                 </div>
-                
-                <div class="card" id="bookmark-card">
-                    <div class="card-header"><h2 class="card-title">📌 내 스크랩북</h2></div>
-                    <div class="card-content">
-                        <ul id="profile-bookmarks-list" class="post-list profile-list">
-                            <li>스크랩한 글을 불러오는 중...</li>
-                        </ul>
-                    </div>
+
+                <div id="tab-content-comments" class="tab-content">
+                    <ul id="profile-comments-list" class="post-list profile-list">
+                        <li>댓글을 불러오는 중...</li>
+                    </ul>
+                </div>
+
+                <div id="tab-content-bookmarks" class="tab-content">
+                    <ul id="profile-bookmarks-list" class="post-list profile-list">
+                        <li>스크랩한 글을 불러오는 중...</li>
+                    </ul>
                 </div>
             </div>
         </div>

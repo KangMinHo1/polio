@@ -1,0 +1,55 @@
+/* mentors.html 전용 스타일 */
+
+.mentor-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; /* 아이템 간 간격 */
+}
+
+.mentor-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: background-color 0.2s ease-in-out;
+}
+
+.mentor-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.mentor-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mentor-id {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.mentor-category {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.mentor-stats {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .mentor-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}

@@ -1,0 +1,12 @@
+/* post-detail.html 전용 스타일 */
+
+.post-detail-card {
+    width: 100%;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.post-detail-card .post-actions {
+    margin-top: 1.5rem; /* 주요 요청 분야 태그와 버튼 그룹 사이에 여백 추가 */
+}

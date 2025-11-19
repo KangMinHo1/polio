@@ -1,71 +1,16 @@
 /* trends.html specific styles */
 
 .trends-grid {
-    display: grid;
-    /* Create 2 equal columns */
-    grid-template-columns: repeat(2, 1fr); 
-    gap: 2rem; /* Spacing between cards */
-    align-items: start; /* Align cards to the top */
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; align-items: start;
 }
 
 .trend-card .card-content {
-    padding-bottom: 1.5rem; /* Slightly more bottom padding */
+    padding-bottom: 1.5rem;
 }
-
-.trend-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem; /* Spacing between list items */
+.trend-card canvas {
+    min-height: 300px;
+    width: 100%;
 }
-
-.trend-list li {
-    display: flex;
-    justify-content: space-between; /* Key on left, value on right */
-    align-items: center;
-    font-size: 0.95rem;
-    padding: 0.5rem 0;
-    border-bottom: 1px dashed var(--border-light);
-}
-.trend-list li:last-child {
-    border-bottom: none;
-}
-
-.trend-list .trend-key {
-    font-weight: 500;
-    color: var(--text-primary);
-}
-
-.trend-list .trend-value {
-    font-weight: 600;
-    color: var(--color-primary);
-    background-color: var(--color-primary-light);
-    padding: 0.15rem 0.6rem;
-    border-radius: var(--radius-full);
-    font-size: 0.85rem;
-}
-:root.dark .trend-list .trend-value {
-    background-color: #25395B; /* color-primary-light (dark) */
-}
-
-
-#success-count {
-    color: var(--color-danger); /* Highlight success count */
-    font-weight: 700;
-    font-size: 1.1em;
-}
-
-.trend-footer {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-light);
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    text-align: center;
-}
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .trends-grid {

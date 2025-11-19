@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Community App - 이력서 관리</title>
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="main">
+        <div class="container">
+            <div class="page-header">
+                <h1 id="page-title">🚀 이력서 관리</h1>
+                <p id="page-description">다른 사용자들이 볼 수 있는 이력 정보를 작성하고 관리합니다.</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-content">
+                    <form id="resume-form">
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="mentor-company">현재 직장 및 직책</label>
+                            <input type="text" id="mentor-company" placeholder="예: OO회사 / 선임 개발자" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="mentor-experience">총 경력</label>
+                            <input type="text" id="mentor-experience" placeholder="예: 5년차" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="mentor-skills">주요 기술 및 전문 분야</label>
+                            <input type="text" id="mentor-skills" placeholder="예: Java, Spring Boot, MSA, DevOps" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="mentor-project-image">대표 프로젝트/이력서 이미지 (선택)</label>
+                            <input type="file" id="mentor-project-image" accept="image/*">
+                            <div id="mentor-image-preview-container" style="margin-top: 1rem; display: none;">
+                                <img id="mentor-image-preview" src="#" alt="이미지 미리보기" style="max-width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-light);">
+                                <button type="button" id="remove-image-btn" class="btn btn--ghost" style="margin-top: 0.5rem; font-size: 0.8rem;">이미지 제거</button>
+                            </div>
+                        </div>
+                        <div class="form-actions" style="justify-content: flex-end; margin-top: 2rem;">
+                            <button type="button" class="btn btn--ghost" id="cancel-btn">취소</button>
+                            <button type="submit" class="btn btn--primary" id="submit-btn">저장하기</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="js/shared.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/edit-resume.js"></script>
+</body>
+</html>

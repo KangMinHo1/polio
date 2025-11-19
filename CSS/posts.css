@@ -289,6 +289,15 @@
   border: 1px solid var(--border-light);
   list-style: none;
 }
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.comment-author-actions {
+  margin-left: auto; /* 이 스타일이 버튼을 오른쪽 끝으로 밀어냅니다. */
+}
 .comment-author {
   font-weight: 600;
   margin-bottom: 0.25rem;
