@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j; // 1. [필수] 이 import가 있어야 합니다.
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +24,7 @@ import java.io.IOException;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter { // 2. 요청당 한 번만 실행됨
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -43,17 +45,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { // 2. 요청
 
             // 6. 토큰이 유효하면, 토큰에서 사용자 이메일(Subject)을 추출
             String email = jwtTokenProvider.getEmailFromToken(token);
+            try {
+                // 7. (핵심) UserDetailsServiceImpl을 통해 UserDetails 객체를 가져옴
+                UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(email);
 
-            // 7. (핵심) UserDetailsServiceImpl을 통해 UserDetails 객체를 가져옴
-            UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(email);
+                // 8. UserDetails 객체를 사용하여 인증 객체(Authentication) 생성
+                //    - Principal로 UserDetails 객체 자체를 사용
+                Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-            // 8. UserDetails 객체를 사용하여 인증 객체(Authentication) 생성
-            //    - Principal로 UserDetails 객체 자체를 사용
-            Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                // 8. (매우 중요) SecurityContextHolder에 인증 객체를 저장
+                //    -> 이 요청이 끝날 때까지 "이 사용자는 인증된 사용자"라고 등록하는 것
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (Exception e) {
+                log.error("Could not set user authentication in security context", e);
+                // DB 조회 실패 시, 인증 객체를 설정하지 않으므로(401) 예외를 굳이 던지지 않아도 됨
+            }
 
-            // 8. (매우 중요) SecurityContextHolder에 인증 객체를 저장
-            //    -> 이 요청이 끝날 때까지 "이 사용자는 인증된 사용자"라고 등록하는 것
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+
         }
 
         // 9. 다음 필터로 요청과 응답을 전달
@@ -62,9 +70,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter { // 2. 요청
         filterChain.doFilter(request, response);
 
     }
-
-
-
-
-
 }

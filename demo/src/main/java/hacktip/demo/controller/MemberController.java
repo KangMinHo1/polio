@@ -4,6 +4,7 @@ import hacktip.demo.dto.*;// 1. dto 패키지 와일드카드 임포트 (TokenIn
 import hacktip.demo.dto.MemberDto.MemberLoginRequestDto;
 import hacktip.demo.dto.MemberDto.MemberSignUpRequestDto;
 import hacktip.demo.dto.MemberDto.MemberSignUpResponseDto;
+import hacktip.demo.dto.MemberDto.ResponseUserDataDto;
 import hacktip.demo.security.UserDetailsImpl;
 import hacktip.demo.service.MemberService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -13,10 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -63,6 +61,23 @@ public class MemberController {
 
         // 3. 200 OK와 함께 성공 메시지 응답
         return ResponseEntity.ok("로그아웃 되었습니다.");
+    }
+
+    //자신의 정보 요청
+    @GetMapping("/me")
+    public ResponseEntity<ResponseUserDataDto> getMe(@AuthenticationPrincipal UserDetailsImpl userDetails){
+        // 서비스 계층에 UserDetails를 전달하여 사용자 정보를 조회합니다.
+        ResponseUserDataDto responseDto = memberService.getCurrentUser(userDetails);
+        return ResponseEntity.ok(responseDto);
+    }
+
+    //자신의 기술스택 정보 요청
+    @GetMapping("/members/me/stacks")
+    public ResponseEntity<ResponseUserDataDto> getMyTechStacks(@AuthenticationPrincipal UserDetailsImpl userDetails){
+        // 서비스 계층에 UserDetails를 전달하여 사용자 정보를 조회합니다.
+        // responseDto = memberService.getMemberTechStacks(userDetails);
+        //return ResponseEntity.ok();
+        return null;
     }
 
     // 6. === [쿠키 만료 헬퍼 메서드 추가] ===

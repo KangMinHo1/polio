@@ -45,7 +45,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // (기존) 인증/회원가입/채팅 API
                         .requestMatchers("/signup", "/login", "/reissue").permitAll()
-                        .requestMatchers("/chat/room/{roomId}/messages").authenticated() // (기존 채팅 API)
+                        .requestMatchers("/chat/room/{roomId}/messages", "/me").authenticated() // (기존 채팅 API)
 
                         // 2. === [게시판 규칙 추가] ===
                         // (조회) GET /posts 와 GET /posts/{postId} 는 누구나(permitAll)
@@ -84,7 +84,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 1. 허용할 출처(Origin) 설정
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5050"));
+        configuration.setAllowedOrigins(Arrays.asList("http://192.168.219.104:5500", "http://localhost:5500"));
         // 2. 허용할 HTTP 메서드 설정 ("*": 모든 메서드 허용)
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"));
         // 3. 허용할 HTTP 헤더 설정 ("*": 모든 헤더 허용)

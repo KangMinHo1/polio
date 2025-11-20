@@ -5,9 +5,11 @@ BEGIN
     FOR t IN (
         SELECT table_name FROM user_tables 
         WHERE table_name IN (
+            -- 새로 추가된 테이블 포함
+            'MEMBER_STACK', 'TECH_STACK',
             'POST_LIKES', 'POST_COMMENT', 'POST', 
             'CHAT_MESSAGE', 'CHATROOM_MEMBER', 
-            'CHATROOM', 'MEMBERS'
+            'CHATROOM', 'MEMBERS', 'REFRESH_TOKENS'
         )
     ) LOOP
         EXECUTE IMMEDIATE 'DROP TABLE ' || t.table_name || ' CASCADE CONSTRAINTS';
@@ -31,13 +33,14 @@ END;
 /
 
 ------------------------------------------------------------
--- 1. MEMBERS 테이블
+-- 1. MEMBERS 테이블 (기본 회원 정보)
 ------------------------------------------------------------
 CREATE TABLE MEMBERS (
     MemberId NUMBER PRIMARY KEY,
     Email VARCHAR2(255 CHAR) NOT NULL UNIQUE,
     Password VARCHAR2(255 CHAR) NOT NULL,
-    Name VARCHAR(255 CHAR) NOT NULL UNIQUE
+    Name VARCHAR2(255 CHAR) NOT NULL UNIQUE,
+    Role VARCHAR2(20 CHAR) NOT NULL
 );
 
 CREATE SEQUENCE SEQ_MEMBERS START WITH 1 INCREMENT BY 1;
@@ -50,6 +53,45 @@ BEGIN
     SELECT SEQ_MEMBERS.NEXTVAL INTO :NEW.MemberId FROM DUAL;
 END;
 /
+
+------------------------------------------------------------
+-- 1-1. TECH_STACK 테이블 (기술 스택 종류 관리) - [신규 추가]
+------------------------------------------------------------
+CREATE TABLE TECH_STACK (
+    StackId NUMBER PRIMARY KEY,
+    StackName VARCHAR2(50 CHAR) NOT NULL UNIQUE
+);
+
+CREATE SEQUENCE SEQ_TECH_STACK START WITH 1 INCREMENT BY 1;
+
+-- 기술 스택 초기 데이터 (선택 사항)
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Java');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Spring Boot');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Python');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'React');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Vue.js');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Oracle');
+COMMIT;
+
+------------------------------------------------------------
+-- 1-2. MEMBER_STACK 테이블 (회원-기술 연결 테이블) - [신규 추가]
+------------------------------------------------------------
+CREATE TABLE MEMBER_STACK (
+    MemberStackId NUMBER PRIMARY KEY, -- JPA를 위한 별도 PK
+    MemberId NUMBER NOT NULL,
+    StackId NUMBER NOT NULL,
+    
+    -- 중복 등록 방지 (한 사람이 같은 기술 두 번 등록 불가)
+    CONSTRAINT uq_member_stack UNIQUE (MemberId, StackId),
+    
+    CONSTRAINT fk_ms_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId) ON DELETE CASCADE,
+    CONSTRAINT fk_ms_stack FOREIGN KEY (StackId) REFERENCES TECH_STACK(StackId) ON DELETE CASCADE
+);
+
+CREATE SEQUENCE SEQ_MEMBER_STACK START WITH 1 INCREMENT BY 1;
+
+
+
 ------------------------------------------------------------
 -- 2. POST 테이블
 ------------------------------------------------------------
@@ -60,7 +102,8 @@ CREATE TABLE POST (
     Content CLOB NOT NULL,
     ViewCount NUMBER DEFAULT 0,
     CreateDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    Category VARCHAR2(50 CHAR) NULL,
+    Category VARCHAR2(50 CHAR) NOT NULL,
+    GithubUrl VARCHAR2(500 CHAR), 
     CONSTRAINT fk_post_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId)
 );
 
@@ -74,6 +117,7 @@ BEGIN
     SELECT SEQ_POST.NEXTVAL INTO :NEW.PostId FROM DUAL;
 END;
 /
+
 ------------------------------------------------------------
 -- 3. POST_LIKES 테이블
 ------------------------------------------------------------
@@ -84,6 +128,7 @@ CREATE TABLE POST_LIKES (
     CONSTRAINT fk_like_post FOREIGN KEY (PostId) REFERENCES POST(PostId),
     CONSTRAINT fk_like_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId)
 );
+
 ------------------------------------------------------------
 -- 4. POST_COMMENT 테이블
 ------------------------------------------------------------
@@ -107,6 +152,7 @@ BEGIN
     SELECT SEQ_COMMENT.NEXTVAL INTO :NEW.CommentId FROM DUAL;
 END;
 /
+
 ------------------------------------------------------------
 -- 5. CHATROOM 테이블
 ------------------------------------------------------------
@@ -126,6 +172,7 @@ BEGIN
     SELECT SEQ_CHATROOM.NEXTVAL INTO :NEW.RoomId FROM DUAL;
 END;
 /
+
 ------------------------------------------------------------
 -- 6. CHATROOM_MEMBER 테이블
 ------------------------------------------------------------
@@ -136,6 +183,7 @@ CREATE TABLE CHATROOM_MEMBER (
     CONSTRAINT fk_map_room FOREIGN KEY (RoomId) REFERENCES CHATROOM(RoomId),
     CONSTRAINT fk_map_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId)
 );
+
 ------------------------------------------------------------
 -- 7. CHAT_MESSAGE 테이블
 ------------------------------------------------------------
@@ -160,20 +208,13 @@ BEGIN
 END;
 /
 
--- (선택) 토큰 값으로도 검색을 빠르게 하고 싶다면 인덱스를 걸 수 있습니다.
--- CREATE INDEX IDX_REFRESH_TOKEN_VALUE ON REFRESH_TOKENS (TOKEN_VALUE);
 ------------------------------------------------------------
--- 완료 메시지
+-- 8. REFRESH_TOKENS 테이블
 ------------------------------------------------------------
-PROMPT ✅ 모든 테이블, 시퀀스, 트리거가 정상 생성되었습니다.
-
 CREATE TABLE REFRESH_TOKENS (
-    -- 1. @Id, VARCHAR2(255)로 설정, Primary Key
     USER_EMAIL VARCHAR2(255) NOT NULL, 
-    
-    -- 2. @Column, 토큰 길이를 넉넉하게 VARCHAR2(512)로 설정
     TOKEN_VALUE VARCHAR2(512) NOT NULL, 
-    
-    -- 3. USER_EMAIL을 기본 키로 지정
     CONSTRAINT PK_REFRESH_TOKENS PRIMARY KEY (USER_EMAIL)
 );
+
+PROMPT ✅ 모든 테이블(회원, 기술스택 포함), 시퀀스, 트리거가 정상 생성되었습니다.

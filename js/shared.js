@@ -1,17 +1,20 @@
 /**
  * CommunityApp - Shared JavaScript
  */
-window.CommunityApp = {
+window.CommunityApp = { // ◀ 최상위 객체
+  //로그인 시 정보가 채워짐 => 사용자의 정보 저장하기 (서버는 영구적으로 저장하는 반면에 서버의 부담을 줄이기 위해 캐시 같은 역할로 사용)
+  //데이터를 저장하는 '객체' ==> 임시저장소 페이지를 이동하면 초기화 됌
   state: {
-    posts: [],
-    users: [],
-    categories: ['공지', '프론트엔드', '백엔드', 'UX/UI 디자인', '데이터 분석', '기타'],
-    user: null,
-    isDarkMode: false,
+    posts: [], // 전체 게시글 목록
+    users: [], //관리자가 전체 사용자를 확인하는 용도의 저장소
+    categories: [], //게시글의 카테고리 목록 (서버에서 받아와 채워짐)
+    user: null, //로그인한 사용자의 정보           localStorage  
+    isDarkMode: false,                           //localStorage
   },
 
-  utils: {
-    formatDate(timestamp) {
+  //utils: 유용한 함수들을 모아놓은 '객체'
+  utils: { 
+    formatDate(timestamp) { 
       const date = new Date(timestamp);
       const now = new Date();
       const diff = (now - date) / 1000;
@@ -20,6 +23,7 @@ window.CommunityApp = {
       if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
       return date.toLocaleDateString('ko-KR');
     },
+    //이 함수는 특정 이벤트(예: 검색어 입력, 창 크기 조절)가 짧은 시간 안에 너무 많이 발생하는 것을 막아주는 역할을 합니다.
     debounce(func, wait) {
       let timeout;
       return function(...args) {
@@ -27,6 +31,7 @@ window.CommunityApp = {
         timeout = setTimeout(() => func.apply(this, args), wait);
       };
     },
+    //화면 우측 상단에 잠시 나타났다가 사라지는 작은 알림 창을 보여주는 함수입니다
     showNotification(message, type = 'info') {
       document.querySelectorAll('.notification').forEach(n => n.remove());
       const notification = document.createElement('div');
@@ -49,6 +54,7 @@ window.CommunityApp = {
         notification.addEventListener('transitionend', () => notification.remove());
       }, 3000);
     },
+    //사용자가 글 내용에 @사용자ID 형식으로 다른 사람을 언급(멘션)했을 때, 이를 감지하여 해당 사용자에게 알림을 보내는 복잡한 로직을 처리합니다
     async parseMentionsAndCreateNotifications(content, link, authorUser) {
         const users = await window.CommunityApp.api.fetchAllUsers();
         const mentions = content.match(/@(\w+)/g);
@@ -56,33 +62,35 @@ window.CommunityApp = {
         const mentionedUserIds = new Set();
         for (const mention of mentions) {
             const userId = mention.substring(1);
-            if (userId === authorUser.id) continue;
-            const userExists = users.some(u => u.id === userId);
+            if (userId === authorUser.name) continue;
+            const userExists = users.some(u => u.name === userId);
             if (userExists) {
                 mentionedUserIds.add(userId);
             }
         }
         for (const userId of mentionedUserIds) {
-            const notificationData = { id: Date.now() + Math.random(), targetUserId: userId, authorId: authorUser.id, authorCategory: authorUser.category, content: content, link: link, isRead: false, createdAt: Date.now() };
+            const notificationData = { id: Date.now() + Math.random(), targetUserId: userId, authorId: authorUser.name, authorCategory: authorUser.category, content: content, link: link, isRead: false, createdAt: Date.now() };
             await window.CommunityApp.api.createNotification(notificationData);
         }
     }
   },
 
+  //api: 서버 통신 함수들을 모아놓은 '객체'
   api: {
     // --- API 기본 설정 ---
     BASE_URL: 'http://localhost:8080',
 
-    // --- 인증 및 요청 헬퍼 ---
+    //서버에 API 요청을 보낼 때 필요한 "인증서"가 포함된 HTTP 헤더를 만드는 역할을 합니다.
     getAuthHeaders() {
-        const token = localStorage.getItem('accessToken');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) {
+        const token = localStorage.getItem('accessToken'); 
+        const headers = { 'Content-Type': 'application/json' }; //내가 보내는 데이터는 JSON 형식이야 라고 서버에 알려주는 역할을 합니다.
+        if (token) {  // 로그인된 사람이라면 headers 객체에 'Authorization'이라는 속성(토큰)을 추가.
             headers['Authorization'] = `Bearer ${token}`;
         }
         return headers;
     },
 
+    //url 인수로 받은 후 서버에 실제로 API 요청을 보내고 응답을 역직렬화하여 반환하는 함수
     async request(endpoint, options = {}) {
         const url = `${this.BASE_URL}${endpoint}`;
         const config = {
@@ -93,7 +101,7 @@ window.CommunityApp = {
             },
         };
 
-        const response = await fetch(url, config);
+        const response = await fetch(url, config); //url로 API 요청
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: '알 수 없는 서버 오류가 발생했습니다.' }));
@@ -104,19 +112,19 @@ window.CommunityApp = {
             return null; // 내용이 없는 성공적인 응답 처리
         }
 
-        return response.json();
+        return response.json();   //응답(Response)의 본문 → JavaScript 객체
     },
 
-    // --- 실제 API 호출 함수들 ---
 
-    async fetchPosts() {
-      return this.request('/posts');
+    // --- 실제 API 호출 함수들 --- 반환 타입이 Promis 객체이기 떄문에 후 처리 응답을 받은 후 필요
+    async fetchPosts() { //게시물 전체 목록 조회
+      return this.request('/api/posts');
     },
     async createPost(postData) {
-      return this.request('/posts', { method: 'POST', body: JSON.stringify(postData) });
+      return this.request('/api/posts', { method: 'POST', body: JSON.stringify(postData) });
     },
     async updatePost(postId, updatedData) {
-      return this.request(`/posts/${postId}`, { method: 'PUT', body: JSON.stringify(updatedData) });
+      return this.request(`/api/posts/${postId}`, { method: 'PATCH', body: JSON.stringify(updatedData) });
     },
     async loginUser(email, password) {
         const response = await this.request('/login', {
@@ -125,136 +133,82 @@ window.CommunityApp = {
         });
         if (response && response.accessToken) {
             localStorage.setItem('accessToken', response.accessToken);
-            // 백엔드에서 /me 같은 엔드포인트를 만들어 사용자 정보를 반환받아야 합니다.
-            // 임시로 email을 id로 사용합니다.
-            const user = { id: email.split('@')[0], email: email, name: '사용자', category: '미지정', role: 'user' }; // 이 부분은 /me API 응답으로 대체되어야 합니다.
-            return user;
+            // ✅ [수정] refreshToken과 만료 시간도 함께 저장합니다.
+            if (response.refreshToken) {
+                localStorage.setItem('refreshToken', response.refreshToken);
+            }
+            if (response.refreshTokenExpirationMs) {
+                localStorage.setItem('refreshTokenExpirationMs', response.refreshTokenExpirationMs);
+            }
+            
+            // 로그인 성공 후, /me API를 호출하여 실제 사용자 정보를 가져옵니다.
+            // 이 요청에는 위에서 저장한 accessToken이 자동으로 포함됩니다.
+
+            const user = await this.request('/me'); // 로그인한 사용자의 name, role, memberStack의 정보가 담김
+            
+            
+            window.CommunityApp.state.user = user; // 사용자의 정보 로컬에 저장하기
+
+            //JavaScript 객체 → JSON 텍스트
+            //{"name":"admin","role":"admin"}' 이라는 텍스트로 변환하여 저장
+            localStorage.setItem('user', JSON.stringify(user)); 
+
+            return user; //사용자의 정보를 객체로 리턴
         }
         throw new Error('로그인에 실패했습니다.');
-    },
-    async fetchAllUsers() {
-      return this.request('/users');
     },
     async signupUser(userData) {
       // API 명세서에 id 필드가 없으므로 제거하고 요청합니다.
       const { id, ...signupData } = userData;
       return this.request('/signup', { method: 'POST', body: JSON.stringify(signupData) });
     },
-    async toggleUserMentorStatus(userId) {
-        return this.request(`/admin/users/${userId}/toggle-mentor`, { method: 'POST' });
-    },
-    async updateUserCategory(userId, newCategory) {
-        return this.request(`/admin/users/${userId}/category`, { method: 'PUT', body: JSON.stringify({ category: newCategory }) });
-    },
-    async deleteUser(userId) {
-      return this.request(`/admin/users/${userId}`, { method: 'DELETE' });
-    },
     async deletePost(postId) {
-      return this.request(`/posts/${postId}`, { method: 'DELETE' });
+      return this.request(`/api/posts/${postId}`, { method: 'DELETE' });
     },
     async fetchComments(postId) {
-      return this.request(`/posts/${postId}/comments`);
-    },
-    async fetchAllComments() {
-      // 모든 댓글을 한번에 가져오는 API는 성능상 좋지 않으므로, 필요 시 백엔드에 페이지네이션을 적용한 API를 요청해야 합니다.
-      // 여기서는 기존 로직을 유지하기 위해 임시로 posts.js 등에서 개별적으로 호출하도록 둡니다.
-      console.warn("fetchAllComments is deprecated. Fetch comments per post.");
-      return [];
+      return this.request(`/api/posts/${postId}/comments`);
     },
     async createComment(commentData) {
-       return this.request(`/posts/${commentData.postId}/comments`, { method: 'POST', body: JSON.stringify(commentData) });
-    },
-    async updateComment(commentId, newContent) {
-        return this.request(`/comments/${commentId}`, { method: 'PUT', body: JSON.stringify({ content: newContent }) });
+       return this.request(`/api/posts/${commentData.postId}/comments`, { method: 'POST', body: JSON.stringify(commentData) });
     },
     async deleteComment(commentId) {
-        return this.request(`/comments/${commentId}`, { method: 'DELETE' });
+        return this.request(`/api/comments/${commentId}`, { method: 'DELETE' });
     },
     async fetchChatMessages() {
-      // API 명세에 따라 수정
-      // 예: GET /chat/room/{roomId}/messages
-      // 이 함수를 호출하는 곳에서 roomId를 받아야 합니다.
-      console.warn("fetchChatMessages requires a roomId.");
-      return [];
+      // 실제 채팅방 목록 조회 후 roomId를 동적으로 가져와야 합니다.
+      const rooms = await this.request('/chat/rooms');
+      if (rooms && rooms.length > 0) {
+        return this.request(`/chat/room/${rooms[0].id}/messages`);
+      }
+      return []; // 채팅방이 없으면 빈 배열 반환
     },
     async sendChatMessage(messageData) {
       // WebSocket 로직으로 처리되어야 함. 여기서는 REST API가 아님.
       console.warn("sendChatMessage should be handled by WebSocket.");
+      // 실제로는 WebSocket을 통해 메시지를 보내야 합니다.
+      return messageData; // 시뮬레이션을 위해 임시로 반환
     },
-    async fetchNotifications(userId) {
-        return this.request(`/notifications`);
+    async toggleLike(postId) {
+        return this.request(`/api/posts/${postId}/like`, { method: 'POST' });
     },
-    async createNotification(notificationData) {
-        return this.request('/notifications', { method: 'POST', body: JSON.stringify(notificationData) });
-    },
-    async markNotificationsAsRead(userId) {
-        return this.request('/notifications/read', { method: 'POST' });
-    },
-    async upvoteComment(commentId, userId) {
-        return this.request(`/comments/${commentId}/upvote`, { method: 'POST' });
-    },
-    async selectBestComment(postId, commentId) {
-        return this.request(`/posts/${postId}/comments/${commentId}/best`, { method: 'POST' });
-    },
-    async markPostAsResolved(postId) {
-        return this.request(`/posts/${postId}/resolve`, { method: 'POST' });
-    },
-    async markAsHired(postId) {
-        return this.request(`/posts/${postId}/hired`, { method: 'POST' });
-    },
-    async revertHired(postId) {
-        return this.request(`/posts/${postId}/revert-hired`, { method: 'POST' });
-    },
-    async addInsightPost(postId, userId) {
-        return this.request(`/posts/${postId}/insight`, { method: 'POST' });
-    },
-    async addInsightComment(commentId, userId) {
-        return this.request(`/comments/${commentId}/insight`, { method: 'POST' });
-    },
-    async toggleBookmark(postId, userId) {
-        return this.request(`/posts/${postId}/bookmark`, { method: 'POST' });
-    },
-    async getMentorStatusList() {
-        return this.request('/mentors/online');
-    },
-    async setMentorStatus(userId, isOnline) {
-        return this.request('/mentors/status', { method: 'POST', body: JSON.stringify({ isOnline }) });
-    },
-    async getOnlineMentors() {
-        return this.request('/mentors/online');
-    },
-
-    async fetchMentorApplications() {
-        return this.request('/admin/mentor-applications');
-    },
-
-    async createMentorApplication(userId) {
-        return this.request('/mentors/apply', { method: 'POST' });
-    },
-
-    async updateMentorApplicationStatus(userId, newStatus) {
-        return this.request(`/admin/mentor-applications/${userId}/status`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
-    },
-
-    async updateMentorResume(userId, resumeData) {
-        return this.request('/resumes', { method: 'PUT', body: JSON.stringify(resumeData) });
-    },
-
-    // ✅ [수정] 트렌드 분석 로직 (feedbackTags 집계 수정)
-    async calculatePortfolioTrends() {
-      return this.request('/trends');
+    async getMyStacks(userName) {
+      if (userName) {
+        // 다른 사용자의 스택을 가져오는 API (백엔드 구현 필요)
+        return this.request(`/members/${userName}/stacks`);
+      }
+      return this.request('/members/me/stacks'); // 내 스택을 가져오는 API
     }
   },
 
   ui: {
-    updateLoginStatus() {
+    updateLoginStatus() { //로그인 상태에 따라 헤더의 오른쪽 상단 메뉴를 변경합니다.
       const userActions = document.getElementById('user-actions');
       if (!userActions) return;
-      const user = window.CommunityApp.state.user;
-      if (user && typeof user === 'object' && user.id) { // category는 없을 수 있음
-        const userDisplay = `(${user.category}) ${user.id}님`;
+      const user = window.CommunityApp.state.user; // name, role
+      if (user && typeof user === 'object' && user.name) {
+        const userDisplay = `(${user.role}) ${user.name}님`;
         const adminButtonHTML = user.role === 'admin' ? `<a class="nav-btn" href="admin.html">관리자</a>` : '';
-        userActions.innerHTML = `${adminButtonHTML}<a id="user-display-link" class="nav-btn" href="profile.html?user=${user.id}">${userDisplay}</a><button id="logout-button" class="btn btn--ghost">로그아웃</button>`;
+        userActions.innerHTML = `${adminButtonHTML}<a id="user-display-link" class="nav-btn" href="profile.html?user=${user.name}">${userDisplay}</a><button id="logout-button" class="btn btn--ghost">로그아웃</button>`;
         const logoutButton = document.getElementById('logout-button');
         if (logoutButton && !logoutButton.dataset.listenerAttached) {
              logoutButton.addEventListener('click', async () => { 
@@ -265,6 +219,9 @@ window.CommunityApp = {
                 } finally {
                     localStorage.removeItem('user'); 
                     localStorage.removeItem('accessToken');
+                    // [수정] refreshToken 관련 정보도 모두 삭제합니다.
+                    localStorage.removeItem('refreshToken');
+                    localStorage.removeItem('refreshTokenExpirationMs');
                     window.CommunityApp.state.user = null; 
                     window.CommunityApp.utils.showNotification('로그아웃되었습니다.', 'info'); 
                     setTimeout(() => window.location.href = 'mainview.html', 1000); 
@@ -300,35 +257,43 @@ window.CommunityApp = {
       if (!badge) return;
       let unreadCount = 0;
       if (forceCount !== null) { unreadCount = forceCount; }
-      else { const notifications = await window.CommunityApp.api.fetchNotifications(window.CommunityApp.state.user.id); unreadCount = notifications.filter(n => !n.isRead).length; }
+      else {
+        // 서버 통신 오류로 인해 임시 비활성화
+        // const notifications = await window.CommunityApp.api.fetchNotifications(window.CommunityApp.state.user.id); 
+        // unreadCount = notifications.filter(n => !n.isRead).length; 
+      }
       if (unreadCount > 0) { badge.textContent = unreadCount > 9 ? '9+' : unreadCount; badge.classList.add('show'); }
       else { badge.classList.remove('show'); }
     }
   },
 
+  //설정 초기화 함수 (생성자 같은 기능)
   async initialize() {
-    // 1. Load User State
-    const savedUser = localStorage.getItem('user');
+    // (빠른 UI 표시를 위해) 일단 localStorage에 저장된 사용자 정보로 state를 채웁니다.
+    const savedUser = localStorage.getItem('user'); 
     if (savedUser) {
-        this.state.user = JSON.parse(savedUser);
+        this.state.user = JSON.parse(savedUser); //JSON 텍스트 → JavaScript 객체 (역직렬화)
     } else { this.state.user = null; }
 
-    // 토큰이 있으면 사용자 정보 다시 가져오기 (페이지 새로고침 시 정보 동기화)
-    if (localStorage.getItem('accessToken') && !this.state.user) {
+    // 로그인 토큰이 존재한다면, 항상 서버에 최신 사용자 정보를 요청하여 데이터를 동기화합니다.
+    // 이렇게 하면 관리자가 역할을 변경했을 때도 새로고침 시 즉시 반영됩니다.
+    if (localStorage.getItem('accessToken')) {
         try {
-            // 백엔드에 /me 엔드포인트가 필요합니다.
-            const userInfo = await this.api.request('/me');
+            const userInfo = await this.api.request('/me'); // 서버에서 받은 최신 정보로 state와 localStorage를 모두 덮어씁니다.
             this.state.user = userInfo;
             localStorage.setItem('user', JSON.stringify(userInfo));
         } catch (e) {
             console.error("Failed to fetch user info with token, logging out.", e);
+            // 토큰이 유효하지 않다면 모든 로그인 정보를 깨끗하게 지웁니다.
             localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('refreshTokenExpirationMs');
             localStorage.removeItem('user');
             this.state.user = null;
         }
     }
 
-    // 2. Load Theme
+    // 다크모드 정보 
     const savedTheme = localStorage.getItem('isDarkMode') === 'true';
     this.state.isDarkMode = savedTheme;
     document.documentElement.classList.toggle('dark', savedTheme);

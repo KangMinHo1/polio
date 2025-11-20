@@ -13,57 +13,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const profileButton = document.getElementById('profile-goto-button');
     
     if (app.state.user && card && userText && profileButton) {
-      userText.textContent = `(${app.state.user.category}) ${app.state.user.id}님`;
-      profileButton.href = `profile.html?user=${encodeURIComponent(app.state.user.id)}`;
+      userText.textContent = `(${app.state.user.role}) ${app.state.user.name}님`;
+      profileButton.href = `profile.html?user=${encodeURIComponent(app.state.user.name)}`;
       card.style.display = 'block';
     } else if (card) {
       card.style.display = 'none';
-    }
-  }
-
-  // 온라인 멘토 렌더링 함수
-  async function renderOnlineMentors() {
-    const card = document.getElementById('online-mentor-card');
-    const listEl = document.getElementById('online-mentor-list');
-    if (!card || !listEl) return;
-    
-    try {
-        const mentors = await app.api.getOnlineMentors();
-        
-        if (mentors.length === 0) {
-            listEl.innerHTML = '<li style="font-size: 0.9rem; color: var(--text-secondary); padding: 0.5rem;">지금 활동 중인 멘토가 없습니다.</li>';
-        } else {
-            listEl.innerHTML = mentors.map(mentor => {
-                let badgeHTML = '';
-                if (mentor.badge) {
-                    const isRocket = mentor.badge.includes('🚀');
-                    badgeHTML = `<span class="mentor-badge ${isRocket ? 'mentor-rocket' : ''}">${mentor.badge}</span>`;
-                } else {
-                    // 배지가 없는 멘토 (예: 카테고리만 있는 경우)
-                    badgeHTML = `<span class="mentor-badge">(${mentor.category})</span>`;
-                }
-
-                // 멘토 ID만 표시 (카테고리는 배지에 포함됨)
-                const mentorIdDisplay = mentor.badge ? mentor.id : `(${mentor.category}) ${mentor.id}`;
-                
-                return `
-                    <li>
-                        <a href="profile.html?user=${encodeURIComponent(mentor.id)}" class="online-mentor-item" title="${mentor.id} 프로필 보기">
-                            <span class="quick-link-icon">🟢</span>
-                            <div class="mentor-info">
-                                <span class="mentor-id">${mentor.id}</span>
-                                ${badgeHTML}
-                            </div>
-                        </a>
-                    </li>
-                `;
-            }).join('');
-        }
-        card.style.display = 'block'; // 데이터 로드 후 카드 표시
-    } catch (error) {
-        console.error("Error fetching online mentors:", error);
-        listEl.innerHTML = '<li style="font-size: 0.9rem; color: var(--text-secondary); padding: 0.5rem;">멘토 목록을 불러오는 데 실패했습니다.</li>';
-        card.style.display = 'block';
     }
   }
 
@@ -179,7 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!techCtx) return;
 
     try {
-      const trends = await app.api.calculatePortfolioTrends();
+      // 서버 통신 오류로 인해 임시 비활성화
+      const trends = { popularTechStacks: [] }; // await app.api.calculatePortfolioTrends();
       const techData = trends.popularTechStacks;
 
       if (techData && techData.length > 0) {
@@ -227,7 +182,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function initializeHomePage() {
     renderProfileSummary();
-    renderOnlineMentors(); // ✅ 온라인 멘토 로드
     renderPopularPosts();
     renderLatestNotices();
     renderImportantPosts();

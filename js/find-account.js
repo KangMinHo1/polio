@@ -10,15 +10,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (findIdForm) {
     findIdForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      // ✅ '학번' -> '이름'
       const name = document.getElementById('name').value;
       const email = document.getElementById('email').value;
       const users = await app.api.fetchAllUsers();
-      // ✅ u.studentId -> u.name
       const foundUser = users.find(u => u.name === name && u.email === email);
 
       if (foundUser) {
-        const message = `회원님의 아이디는 [ ${foundUser.id} ] 입니다.`;
+        const message = `회원님의 이메일(아이디)은 [ ${foundUser.email} ] 입니다.`;
         window.location.href = `show-result.html?title=아이디 찾기 결과&message=${encodeURIComponent(message)}`;
       } else {
         app.utils.showNotification('일치하는 사용자 정보가 없습니다.', 'warning');
@@ -31,13 +29,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (findPasswordForm) {
     findPasswordForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const id = document.getElementById('id').value;
-      // ✅ '학번' -> '이름', '이메일'
-      const name = document.getElementById('name').value;
       const email = document.getElementById('email').value;
+      const name = document.getElementById('name').value;
       const users = await app.api.fetchAllUsers();
-      // ✅ u.studentId -> u.name && u.email
-      const foundUser = users.find(u => u.id === id && u.name === name && u.email === email);
+      // [수정] id 대신 email로 사용자를 찾습니다.
+      const foundUser = users.find(u => u.email === email && u.name === name);
 
       if (foundUser) {
         // 보안상 비밀번호를 직접 보여주는 것은 좋지 않지만, 현재 구조를 유지합니다.

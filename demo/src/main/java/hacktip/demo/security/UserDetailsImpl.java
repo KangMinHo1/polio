@@ -1,8 +1,10 @@
 package hacktip.demo.security;
 
 import hacktip.demo.domain.Member;
+import hacktip.demo.domain.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -26,7 +28,11 @@ public class UserDetailsImpl implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // 현재는 권한(Role)을 사용하지 않으므로 빈 리스트를 반환합니다.
-        return Collections.emptyList();
+        Role role = member.getRole();
+
+        // Role Enum의 key (예: "ROLE_MENTOR")를 사용하여 권한 객체 생성
+        // SimpleGrantedAuthority는 스프링 시큐리티가 이해하는 권한 표현 방식입니다.
+        return Collections.singletonList(new SimpleGrantedAuthority(role.getKey()));
     }
 
     @Override

@@ -49,12 +49,13 @@ public class JwtTokenProvider {
      * @param email 사용자의 이메일 (토큰의 주체(Subject)로 사용)
      * @return 생성된 JWT Access Token 문자열
      */
-    public String createAccessToken(String email){
+    public String createAccessToken(String email, String role){
         Date now = new Date();
         Date validity = new Date(now.getTime() + accessTokenExpirationMs);
 
         return Jwts.builder()
                 .subject(email)// 토큰의 주체 (e.g., 사용자 이메일)
+                .claim("auth", role)  // [핵심] "auth"라는 이름으로 역할 정보 저장
                 .issuedAt(now) // 토큰 발급 시간
                 .expiration(validity)// 토큰 만료 시간
                 .signWith(secretKey, Jwts.SIG.HS256)// 사용할 서명 알고리즘과 비밀 키
@@ -136,6 +137,16 @@ public class JwtTokenProvider {
                 .getPayload(); // payload(Claims) 부분 가져오기
 
         return claims.getSubject(); // Claims에서 subject(이메일) 반환
+    }
+
+    // 2. 토큰에서 Role 정보 꺼내기 (검증용)
+    public String getRoleFromToken(String token){
+        return Jwts.parser() //JWT를 파싱할 때 사용하는 빌더 객체를 생성합니다.
+                .verifyWith(secretKey) //JWT 서명을 검증할 비밀 키를 지정합니다.
+                .build() //위에서 설정한 검증 옵션으로 파서 객체를 완성(build) 합니다.
+                .parseSignedClaims(token) //실제로 JWT 토큰을 파싱하고 서명을 검증합니다.
+                .getPayload() //JWT에서 payload(클레임)를 꺼내는 단계입니다.
+                .get("auth", String.class); //payload 안에서 "auth"라는 특정 클레임 값을 꺼냅니다.
     }
 
 

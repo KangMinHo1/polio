@@ -1,14 +1,17 @@
 package hacktip.demo.service;
 
 import hacktip.demo.config.jwt.JwtTokenProvider;
-import hacktip.demo.domain.Member;
-import hacktip.demo.domain.RefreshToken;
+import hacktip.demo.domain.*;
 import hacktip.demo.dto.*;
 import hacktip.demo.dto.MemberDto.MemberLoginRequestDto;
 import hacktip.demo.dto.MemberDto.MemberSignUpRequestDto;
 import hacktip.demo.dto.MemberDto.MemberSignUpResponseDto;
+import hacktip.demo.dto.MemberDto.ResponseUserDataDto;
 import hacktip.demo.repository.MemberRepository;
+import hacktip.demo.repository.MemberStackRepository;
 import hacktip.demo.repository.RefreshTokenRepository;
+import hacktip.demo.repository.TechStackRepository;
+import hacktip.demo.security.UserDetailsImpl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -16,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -24,12 +28,11 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
-
-    // 4. JwtTokenProvider 의존성 주입 (final + @RequiredArgsConstructor)
     private final JwtTokenProvider jwtTokenProvider;
-
-    // 6. RefreshTokenRepository 주입
     private final RefreshTokenRepository refreshTokenRepository;
+
+    private final TechStackRepository techStackRepository;
+    private final MemberStackRepository memberStackRepository;
 
     // 7. application.properties에서 RT 만료 시간 주입
     @Value("${jwt.refresh-token-expiration-ms}")
@@ -39,16 +42,28 @@ public class MemberService {
     @Transactional
     public MemberSignUpResponseDto signUp(MemberSignUpRequestDto request){
         String encodedPassword = passwordEncoder.encode(request.getPassword()); //비밀번호 암호화
-        Member entity = request.toEntity(encodedPassword); // 엔티티 생성
+
 
         //이메일 중복 검사
-        if(memberRepository.existsByEmail(entity.getEmail())){
+        if(memberRepository.existsByEmail(request.getEmail())){
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다,");
         }
         //이름 중복 검사
-        if(memberRepository.existsByName(entity.getName())){
+        if(memberRepository.existsByName(request.getName())){
             throw new IllegalArgumentException("이미 사용 중인 이름입니다.");
         }
+
+        // 3. [보안] 관리자 가입 막기 (선택 사항)
+        if (request.getRole() == Role.ADMIN) {
+            throw new IllegalArgumentException("관리자 권한으로 가입할 수 없습니다.");
+        }
+        // 4. [수정] Service에서 Entity 조립 (DTO.toEntity 삭제 대응)
+        Member entity = Member.builder()
+                .email(request.getEmail())
+                .password(encodedPassword)
+                .name(request.getName())
+                .role(request.getRole()) // 역할 주입
+                .build();
 
         Member savedMember = memberRepository.save(entity); // DB에 엔티티 저장
 
@@ -73,7 +88,7 @@ public class MemberService {
         }
 
         // 3. (수정) Access Token, Refresh Token 생성
-        String accessToken = jwtTokenProvider.createAccessToken(member.getEmail());
+        String accessToken = jwtTokenProvider.createAccessToken(member.getEmail(), member.getRole().getKey());
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getEmail());
 
         // 4. (추가) Refresh Token DB에 저장 (또는 갱신)
@@ -110,6 +125,13 @@ public class MemberService {
         }
     }
 
+    //로그인한 회원의 이름과 역할 제공
+    public ResponseUserDataDto getCurrentUser(UserDetailsImpl userDetails){
+        Member member = userDetails.getMember();
+        List<MemberStack> memberStack = memberStackRepository.findByMember_MemberId(member.getMemberId());
+        return new ResponseUserDataDto(member.getName(), member.getRole(), memberStack);
+    }
+
     // 2. === [토큰 재발급 메서드 추가] ===
     /**
      * Refresh Token을 기반으로 새로운 Access Token을 재발급
@@ -143,9 +165,13 @@ public class MemberService {
         }
 
         // --- 모든 검증 통과 ---
+        // 5. [수정] Access Token 재발급 시 Role 정보가 필요함!
+        //    -> 이메일로 Member를 다시 조회해서 Role을 가져와야 합니다.
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
         // 5. 새로운 Access Token 생성
-        String newAccessToken = jwtTokenProvider.createAccessToken(email);
+        String newAccessToken = jwtTokenProvider.createAccessToken(email, member.getRole().getTitle());
 
         // 6. 새 Access Token을 DTO에 담아 반환
         return new TokenResponseDto(newAccessToken);

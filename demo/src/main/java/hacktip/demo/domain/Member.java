@@ -3,6 +3,9 @@ package hacktip.demo.domain;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -32,4 +35,15 @@ public class Member {
     @Column(name = "NAME", nullable = false, unique = true)
     private String name;
 
+    //@Enumerated는 **JPA(Java Persistence API)**에서 사용하는 애너테이션으로, enum 타입 필드를 데이터베이스에 저장할 때 어떻게 저장할지를 지정합니다.
+    // 속성 값 의미 : Enum의 이름 자체를 문자열로 DB에 저장
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ROLE", nullable = false)
+    private Role role;
+
+    // [추가] 회원이 가진 기술 스택 목록 (양방향 매핑)
+    // cascade = ALL: 회원이 삭제되면 연결된 기술 스택 정보도 같이 삭제됨 (DB의 ON DELETE CASCADE와 맞춤)
+    // orphanRemoval = true: 리스트에서 제거하면 DB에서도 삭제됨
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MemberStack> memberStacks = new ArrayList<>();
 }

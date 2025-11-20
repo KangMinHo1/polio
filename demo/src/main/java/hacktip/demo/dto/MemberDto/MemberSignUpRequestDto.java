@@ -1,11 +1,15 @@
 package hacktip.demo.dto.MemberDto;
 
 import hacktip.demo.domain.Member;
+import hacktip.demo.domain.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @NoArgsConstructor
 @Getter
@@ -22,12 +26,7 @@ public class MemberSignUpRequestDto {
     @NotBlank(message = "이름은 필수 입력 항목입니다.")
     private String name;
 
+    @NotNull(message = "역할은 필수 입력 항목입니다.")
+    private Role role;
 
-    public Member toEntity(String encodedPassword) {
-        return Member.builder()
-                .email(email)
-                .password(encodedPassword)
-                .name(name)
-                .build();
-    }
 }

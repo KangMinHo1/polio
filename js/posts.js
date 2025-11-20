@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     while (elements.categoryFilter.options.length > 1) {
         elements.categoryFilter.remove(1);
     }
-    app.state.categories.forEach((category) => {
+    app.state.techStack.forEach((category) => {
       elements.categoryFilter.add(new Option(category, category));
     });
   }

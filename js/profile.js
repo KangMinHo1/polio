@@ -10,18 +10,9 @@ function renderUserPosts(userPosts, currentUser, profileUser) {
     if (userPosts.length === 0) {
         postsList.innerHTML = '<li>작성한 글이 없습니다.</li>';
     } else {
-        postsList.innerHTML = userPosts.map(post => {
-            let actionButtonHTML = '';
-            if (currentUser && currentUser.id === profileUser.id && post.postType === 'feedback') {
-                if (post.isHiredSuccess) {
-                    actionButtonHTML = `<div class="profile-list-item-actions"><button class="btn btn--ghost btn-hire-action btn-revert-hire" data-post-id="${post.id}">되돌리기</button></div>`;
-                } else {
-                    actionButtonHTML = `<div class="profile-list-item-actions"><button class="btn btn--success btn-hire-action btn-mark-hired" data-post-id="${post.id}">🎉 취업 성공!</button></div>`;
-                }
-            }
+        postsList.innerHTML = userPosts.map(post => {            let actionButtonHTML = '';
             let tag = '';
             if (post.postType === 'casestudy') { tag = '<span style="color: var(--color-highlight);">[💡 스터디]</span>'; }
-            else if (post.isHiredSuccess) { tag = '<span style="color: #D97706;">[🎉 성공]</span>'; }
             else if (post.isResolved) { tag = '<span style="color: #16A34A;">[해결]</span>'; }
 
             return `
@@ -53,12 +44,7 @@ function renderUserComments(userComments, allPosts) {
                 const postTitle = originalPost ? originalPost.title : '삭제된 게시글';
                 const postType = originalPost ? (originalPost.postType || 'feedback') : 'feedback';
                 const shortComment = comment.content.length > 100 ? comment.content.substring(0, 100) + '...' : comment.content;
-                let statsHTML = '';
-                if (postType === 'casestudy') { statsHTML = ` • 💡 ${(comment.insights || []).length}`; }
-                else {
-                    statsHTML = ` • 👍 ${(comment.upvotes || []).length}`;
-                    if (comment.isBest) { statsHTML += ' • <span style="color: var(--color-primary);">🏆 베스트</span>'; }
-                }
+                let statsHTML = ` • 👍 ${(comment.upvotes || []).length}`;
                 return `
                   <li class="profile-comment-item">
                     <div class="profile-comment-content">"${shortComment}"</div>
@@ -112,72 +98,32 @@ function renderBookmarks(allPosts, currentUser, profileUser) {
     }
 }
 
-function setupPostListEventHandlers(currentUser, profileUser) {
-    const postsList = document.getElementById('profile-posts-list');
-    if (!postsList) return;
+function renderTechStacks(stacks) {
+    const container = document.getElementById('profile-tech-stacks');
+    const listEl = document.getElementById('tech-stack-list');
+    if (!container || !listEl) return;
 
-    postsList.addEventListener('click', async (e) => {
-        const app = window.CommunityApp;
-        
-        if (e.target.classList.contains('btn-mark-hired')) {
-            const postId = parseInt(e.target.dataset.postId);
-            if (confirm('정말로 이 포트폴리오로 취업에 성공하셨나요?\n이 글에 "베스트 피드백"을 남긴 멘토에게 감사가 전달됩니다.')) {
-                await app.api.markAsHired(postId);
-                app.utils.showNotification('축하합니다! 취업 성공이 기록되었습니다.', 'success');
-                location.reload();
-            }
-        }
-
-        if (e.target.classList.contains('btn-revert-hire')) {
-            const postId = parseInt(e.target.dataset.postId);
-            if (confirm('취업 성공 기록을 되돌리시겠습니까?\n멘토에게 부여된 보상이 회수됩니다.')) {
-                await app.api.revertHired(postId);
-                app.utils.showNotification('기록이 되돌려졌습니다.', 'info');
-                location.reload();
-            }
-        }
-    });
-}
-
-async function setupMentorToggle(app, profileUser, currentUser, isMentor) {
-    const toggleArea = document.getElementById('mentor-status-toggle-area');
-    const toggleInput = document.getElementById('mentor-status-toggle');
-
-    if (!toggleArea || !toggleInput) return;
-
-    if (isMentor && currentUser && currentUser.id === profileUser.id) {
-        toggleArea.style.display = 'block';
-
-        const onlineMentors = await app.api.getMentorStatusList();
-        const isOnline = onlineMentors.some(m => m.userId === currentUser.id);
-        toggleInput.checked = isOnline;
-
-        toggleInput.addEventListener('change', async (e) => {
-            const newStatus = e.target.checked;
-            try {
-                await app.api.setMentorStatus(currentUser.id, newStatus);
-                app.utils.showNotification(
-                    newStatus ? '피드백 가능 상태가 되었습니다. (2시간)' : '오프라인 상태가 되었습니다.',
-                    'success'
-                );
-            } catch (error) {
-                app.utils.showNotification('상태 변경에 실패했습니다.', 'danger');
-                e.target.checked = !newStatus;
-            }
-        });
+    if (stacks && stacks.length > 0) {
+        listEl.innerHTML = stacks.map(stack => `<span class="tech-stack-item">${stack}</span>`).join('');
+        container.style.display = 'block';
+    } else {
+        listEl.innerHTML = '<p class="no-stacks-notice">등록된 기술 스택이 없습니다.</p>';
+        container.style.display = 'block';
     }
 }
 
+
+
 async function setupMentorApplication(app, profileUser, currentUser, isMentor) {
     const applicationArea = document.getElementById('mentor-application-area');
-    if (!applicationArea || !currentUser || currentUser.id !== profileUser.id || isMentor) {
+    if (!applicationArea || !currentUser || currentUser.name !== profileUser.name || isMentor) {
         if(applicationArea) applicationArea.style.display = 'none';
         return;
     }
 
     applicationArea.style.display = 'block';
     const applications = await app.api.fetchMentorApplications();
-    const myApplication = applications.find(app => app.userId === currentUser.id);
+    const myApplication = applications.find(app => app.userId === currentUser.name);
 
     if (myApplication) {
         if (myApplication.status === 'pending') {
@@ -202,10 +148,10 @@ async function setupMentorApplication(app, profileUser, currentUser, isMentor) {
     
     // 멘토 신청 폼은 이제 별도 페이지가 없으므로, 폼 제출 시 바로 API를 호출합니다.
     // 간단한 이력 정보 없이 신청만 하는 방식으로 변경합니다.
-    applyBtn.addEventListener('click', async () => {
+    applyBtn.addEventListener('click', async () => { // 'id'를 사용하던 부분
         if (confirm('멘토로 활동을 신청하시겠습니까? 관리자 검토 후 승인됩니다.')) {
             try {
-                await app.api.createMentorApplication(currentUser.id); // 이력서 정보 없이 신청
+                await app.api.createMentorApplication(currentUser.name); // name으로 변경
                 app.utils.showNotification('멘토 신청이 완료되었습니다. 검토 후 반영됩니다.', 'success');
                 location.reload();
             } catch (error) {
@@ -226,10 +172,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         userId: document.getElementById('profile-user-id'),
         userCategory: document.getElementById('profile-user-category'),
         userBadge: document.getElementById('profile-user-badge'),
-        bestCount: document.getElementById('profile-best-count'),
-        upvoteCount: document.getElementById('profile-upvote-count'),
-        mentorCount: document.getElementById('profile-mentor-count'),
-        insightCount: document.getElementById('profile-insight-count'),
         postsList: document.getElementById('profile-posts-list'),
         commentsList: document.getElementById('profile-comments-list'),
         resumeCard: document.getElementById('resume-card'),
@@ -253,11 +195,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function initializeProfilePage() {
-        const allUsers = app.state.users;
+        const allUsers = await app.api.fetchAllUsers(); // 전체 사용자 목록을 서버에서 다시 가져옵니다.
         const allPosts = app.state.posts;
         const allComments = await app.api.fetchAllComments(); 
 
-        const profileUser = allUsers.find(u => u.id === targetUserId);
+        const profileUser = allUsers.find(u => u.name === targetUserId);
 
         if (!profileUser) {
             elements.userId.textContent = '존재하지 않는 사용자입니다.';
@@ -270,44 +212,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             profileUser.isMentor = (profileUser.category === '재직자' || profileUser.role === 'admin');
         }
 
-        elements.userId.textContent = profileUser.id;
-        elements.userCategory.textContent = profileUser.category || '사용자';
+        elements.userId.textContent = profileUser.name;
+        elements.userCategory.textContent = profileUser.role || '사용자';
 
         // --- 평판 계산 ---
-        let totalUpvotes = 0;
-        let totalBestAnswers = 0;
-        let hiredMentorCount = 0;
-        let totalInsights = 0;
-        let isTrustedMentor = false;
-        
-        const userComments = allComments.filter(c => c.author === profileUser.id);
-        const userPosts = allPosts.filter(p => p.author === profileUser.id);
+        const userComments = allComments.filter(c => c.author === profileUser.name);
+        const userPosts = allPosts.filter(p => p.author === profileUser.name);
 
-        userComments.forEach(comment => {
-            totalUpvotes += (comment.upvotes || []).length;
-            if (comment.isBest) totalBestAnswers++;
-            totalInsights += (comment.insights || []).length;
-        });
-        userPosts.forEach(post => {
-            if (post.postType === 'casestudy') totalInsights += (post.insights || []).length;
-        });
-        const bestCommentPostIds = userComments.filter(c => c.isBest).map(c => c.postId);
-        if (bestCommentPostIds.length > 0) {
-            hiredMentorCount = allPosts.filter(post => bestCommentPostIds.includes(post.id) && post.isHiredSuccess).length;
-        }
-
-        elements.bestCount.textContent = totalBestAnswers;
-        elements.upvoteCount.textContent = totalUpvotes;
-        elements.mentorCount.textContent = hiredMentorCount;
-        elements.insightCount.textContent = totalInsights;
+        const totalBestAnswers = userComments.filter(c => c.isBest).length;
 
         // --- 배지 렌더링 ---
         // isTrustedMentor는 이제 멘토 자격 여부가 아닌, '신뢰도 높은' 멘토임을 나타내는 시각적 배지 표시용으로만 사용됩니다.
-        if (hiredMentorCount > 0) {
-            elements.userBadge.textContent = `🚀 취업시킨 멘토 (${hiredMentorCount}회)`;
-            elements.userBadge.className = 'profile-mentor-badge';
-            elements.userBadge.style.display = 'inline-block';
-        } else if (profileUser.isMentor && totalBestAnswers >= 5) {
+        if (profileUser.isMentor && totalBestAnswers >= 5) {
             elements.userBadge.textContent = '🏅 신뢰하는 멘토';
             elements.userBadge.className = 'profile-trust-badge';
             elements.userBadge.style.display = 'inline-block';
@@ -318,17 +234,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             if (elements.userBadge) elements.userBadge.style.display = 'none';
         }
+
+        // --- 기술 스택 렌더링 ---
+        // 프로필 주인의 기술 스택을 가져와서 표시합니다.
+        // 백엔드에 /members/{userId}/stacks 와 같은 API가 필요합니다.
+        try {
+            // 임시로 getMyStacks를 사용하지만, 실제로는 profileUser.id를 사용해야 합니다.
+            const stacks = await app.api.getMyStacks(profileUser.name);
+            renderTechStacks(stacks);
+        } catch (error) {
+            console.error("Failed to fetch tech stacks:", error);
+        }
         
         // --- 멘토 토글 설정 ---
         // 멘토 기능 활성화 여부는 profileUser.isMentor 값으로 직접 판단합니다.
-        await setupMentorToggle(app, profileUser, currentUser, profileUser.isMentor);
-        await setupMentorApplication(app, profileUser, currentUser, profileUser.isMentor);
+        await setupMentorApplication(app, profileUser, currentUser, profileUser.isMentor); // 내부 로직은 id 대신 name 사용
         
         const applications = await app.api.fetchMentorApplications();
-        const userApplication = applications.find(a => a.userId === profileUser.id);
+        const userApplication = applications.find(a => a.userId === profileUser.name);
 
         // 멘토이거나, 자신의 프로필을 볼 때만 이력서 카드 표시
-        if (profileUser.isMentor || (currentUser && currentUser.id === profileUser.id)) {
+        if (profileUser.isMentor || (currentUser && currentUser.name === profileUser.name)) {
             elements.resumeCard.style.display = 'block';
         }
 
@@ -352,7 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             elements.noResumeNotice.style.display = 'block';
         }
         // 프로필 주인이 본인일 경우, 이력서 작성/수정 버튼 표시
-        if (currentUser && currentUser.id === profileUser.id) {
+        if (currentUser && currentUser.name === profileUser.name) {
             elements.editResumeBtn.style.display = 'inline-flex';
             elements.editResumeBtn.textContent = (userApplication && userApplication.resume) ? '✏️ 수정하기' : '✏️ 작성하기';
             elements.editResumeBtn.addEventListener('click', () => {
@@ -387,8 +313,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
-
-        setupPostListEventHandlers(currentUser, profileUser);
     }
 
     initializeProfilePage();

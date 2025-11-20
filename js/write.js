@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function populateCategories() {
         if (!elements.category) return;
-        const categoriesForUser = app.state.categories.filter(c => c !== '공지');
+        const categoriesForUser = app.state.techStack.filter(c => c !== '공지');
         categoriesForUser.forEach(category => {
             elements.category.add(new Option(category, category));
         });

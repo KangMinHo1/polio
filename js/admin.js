@@ -65,14 +65,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderUserList() {
     if (!elements.userList) return;
     const users = app.state.users || []; // 데이터 없을 경우 대비
-    const currentAdminId = app.state.user.id;
+    const currentAdminName = app.state.user.name;
 
     // 현재 로그인한 관리자 자신을 목록에서 제외
-    const usersToDisplay = users.filter(user => user.id !== currentAdminId);
+    const usersToDisplay = users.filter(user => user.name !== currentAdminName);
 
     // [추가] 하위 호환성을 위한 멘토 상태 보정
     usersToDisplay.forEach(user => {
-      if (user.isMentor === undefined) {
+      if (user.isMentor === undefined) { // id -> name
         user.isMentor = (user.category === '재직자' || user.role === 'admin');
       }
     });
@@ -81,25 +81,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       const mentorBadge = user.isMentor ? '<span class="profile-mentor-badge" style="font-size: 0.7rem; padding: 0.1rem 0.5rem; margin-left: 0.5rem;">멘토</span>' : '';
       // 멘토인 경우에만 '멘토 취소' 버튼을 생성합니다.
       const mentorButtonHTML = user.isMentor 
-        ? `<button class="btn btn--ghost btn-toggle-mentor" data-user-id="${user.id}" style="margin-left: 0.5rem;">멘토 취소</button>`
+        ? `<button class="btn btn--ghost btn-toggle-mentor" data-user-name="${user.name}" style="margin-left: 0.5rem;">멘토 취소</button>`
         : '';
         
       return `
       <li class="list-item">
         <div class="item-info">
-          <div class="item-title">${user.id} (${user.name} / ${user.email})${mentorBadge}</div>
+          <div class="item-title">${user.name} (${user.email})${mentorBadge}</div>
         </div>
         <div class="item-actions">
-          <select class="select category-select" data-user-id="${user.id}" ${user.role === 'admin' ? 'disabled' : ''} style="width: 100px;">
+          <select class="select category-select" data-user-name="${user.name}" ${user.role === 'admin' ? 'disabled' : ''} style="width: 100px;">
             <option value="취준생" ${user.category === '취준생' ? 'selected' : ''}>취준생</option>
             <option value="재직자" ${user.category === '재직자' ? 'selected' : ''}>재직자</option>
           </select>
-          <select class="select role-select" data-user-id="${user.id}" style="width: 90px; margin-left: 0.5rem;">
+          <select class="select role-select" data-user-name="${user.name}" style="width: 90px; margin-left: 0.5rem;">
             <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
             <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
           </select>
           ${mentorButtonHTML}
-          <button class="btn btn--danger btn-delete-user" data-user-id="${user.id}" style="margin-left: 0.5rem;">
+          <button class="btn btn--danger btn-delete-user" data-user-name="${user.name}" style="margin-left: 0.5rem;">
             삭제
           </button>
         </div>
@@ -215,10 +215,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function handleDeleteUser(e) {
-    const userId = e.target.dataset.userId;
-    if (confirm(`정말로 '${userId}' 사용자를 삭제하시겠습니까?\n이 사용자가 작성한 모든 게시글과 댓글이 함께 삭제됩니다.`)) {
+    const userName = e.target.dataset.userName;
+    if (confirm(`정말로 '${userName}' 사용자를 삭제하시겠습니까?\n이 사용자가 작성한 모든 게시글과 댓글이 함께 삭제됩니다.`)) {
       try {
-        await app.api.deleteUser(userId);
+        await app.api.deleteUser(userName);
         app.utils.showNotification('사용자가 삭제되었습니다.', 'success');
         // Re-initialize state and re-render (simplest way to ensure consistency)
         await app.initialize(); // Reload all data
@@ -244,15 +244,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function handleRoleChange(e) {
-    const userId = e.target.dataset.userId;
+    const userName = e.target.dataset.userName;
     const newRole = e.target.value;
-    const originalRole = app.state.users.find(u => u.id === userId)?.role || 'user'; // Find original role
+    const originalRole = app.state.users.find(u => u.name === userName)?.role || 'user'; // Find original role
 
-    if (confirm(`'${userId}' 사용자의 역할을 '${newRole}'(으)로 변경하시겠습니까?`)) {
+    if (confirm(`'${userName}' 사용자의 역할을 '${newRole}'(으)로 변경하시겠습니까?`)) {
         try {
             // Simulate API call for role update (replace with actual API if available)
             let users = await app.api.fetchAllUsers();
-            const userIndex = users.findIndex(u => u.id === userId);
+            const userIndex = users.findIndex(u => u.name === userName);
             if (userIndex > -1) {
                 users[userIndex].role = newRole;
                 localStorage.setItem('users', JSON.stringify(users)); // Save
@@ -272,14 +272,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function handleMentorStatusChange(e) {
-    const userId = e.target.dataset.userId;
-    const user = app.state.users.find(u => u.id === userId);
+    const userName = e.target.dataset.userName;
+    const user = app.state.users.find(u => u.name === userName);
     if (!user) return;
 
     const actionText = user.isMentor ? '멘토 자격을 해제' : '멘토로 지정';
-    if (confirm(`'${userId}' 사용자를 ${actionText}하시겠습니까?`)) {
+    if (confirm(`'${userName}' 사용자를 ${actionText}하시겠습니까?`)) {
         try {
-            await app.api.toggleUserMentorStatus(userId);
+            await app.api.toggleUserMentorStatus(userName);
             app.utils.showNotification('사용자 멘토 상태가 변경되었습니다.', 'success');
             await app.initialize();
             initializeAdminPage();
@@ -290,16 +290,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function handleCategoryChange(e) {
-    const userId = e.target.dataset.userId;
+    const userName = e.target.dataset.userName;
     const newCategory = e.target.value;
-    const user = app.state.users.find(u => u.id === userId);
+    const user = app.state.users.find(u => u.name === userName);
     if (!user) return;
 
     const originalCategory = user.category;
 
-    if (confirm(`'${userId}' 사용자의 직업 상태를 '${newCategory}'(으)로 변경하시겠습니까?`)) {
+    if (confirm(`'${userName}' 사용자의 직업 상태를 '${newCategory}'(으)로 변경하시겠습니까?`)) {
         try {
-            await app.api.updateUserCategory(userId, newCategory);
+            await app.api.updateUserCategory(userName, newCategory);
             app.utils.showNotification('사용자 직업 상태가 변경되었습니다.', 'success');
             await app.initialize();
             initializeAdminPage();
