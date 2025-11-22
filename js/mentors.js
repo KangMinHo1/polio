@@ -14,14 +14,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!elements.container) return;
 
         try {
-            const allUsers = await app.api.fetchAllUsers();
-            const allPosts = await app.api.fetchPosts();
+            const allUsers = app.state.users; // ✅ [수정] app.state에 이미 로드된 데이터를 사용합니다.
             const allComments = await app.api.fetchAllComments();
 
             const mentors = allUsers.filter(user => {
-                // 하위 호환성 보장
+                // ✅ [수정] 영문 Enum 이름 대신 한글 역할명과 비교합니다.
+                // 하위 호환성 보장: isMentor 속성이 없으면 role로 판단
                 if (user.isMentor === undefined) {
-                    return user.category === '재직자' || user.role === 'admin';
+                    return user.role === '재직자' || user.role === '관리자';
                 }
                 return user.isMentor;
             });
@@ -32,30 +32,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             const mentorData = mentors.map(mentor => {
-                const userComments = allComments.filter(c => c.author === mentor.id);
+                // ✅ [수정] id 대신 name으로 댓글 작성자를 찾습니다.
+                const userComments = allComments.filter(c => c.author === mentor.name);
                 const bestAnswers = userComments.filter(c => c.isBest).length;
-                const hiredCount = allPosts.filter(p => 
-                    p.isHiredSuccess && userComments.some(c => c.isBest && c.postId === p.id)
-                ).length;
                 
                 return {
                     ...mentor,
                     stats: {
-                        bestAnswers,
-                        hiredCount
+                        bestAnswers
                     }
                 };
             }).sort((a, b) => b.stats.hiredCount - a.stats.hiredCount || b.stats.bestAnswers - a.stats.bestAnswers);
 
             elements.container.innerHTML = mentorData.map(mentor => `
-                <a href="profile.html?user=${mentor.id}" class="mentor-item">
+                <a href="profile.html?user=${mentor.name}" class="mentor-item">
                     <span class="mentor-info">
-                        <strong class="mentor-id">${mentor.id}</strong>
-                        <span class="mentor-category">${mentor.category}</span>
+                        <strong class="mentor-id">${mentor.name}</strong>
+                        <span class="mentor-category">${mentor.role}</span>
                     </span>
                     <span class="mentor-stats">
                         <span>🏆 베스트 피드백 <strong>${mentor.stats.bestAnswers}</strong></span>
-                        <span>🚀 취업 성공 도움 <strong>${mentor.stats.hiredCount}</strong></span>
                     </span>
                 </a>
             `).join('');

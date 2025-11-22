@@ -42,9 +42,9 @@ public class CommentController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         // 현재 로그인한 사용자의 ID를 가져옴
-        Long memberId = userDetails.getMember().getMemberId();
+        String email = userDetails.getMember().getEmail();
 
-        commentService.createComment(postId, memberId, requestDto);
+        commentService.createComment(postId, email, requestDto);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body("댓글이 성공적으로 작성되었습니다.");
@@ -60,10 +60,10 @@ public class CommentController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         // 현재 로그인한 사용자의 ID를 가져옴
-        Long memberId = userDetails.getMember().getMemberId();
+        String email = userDetails.getMember().getEmail();
 
         try {
-            commentService.deleteComment(commentId, memberId);
+            commentService.deleteComment(commentId, email);
             return ResponseEntity.ok("댓글이 성공적으로 삭제되었습니다.");
         } catch (AccessDeniedException e) {
             // 서비스 계층에서 권한 없음을 확인하고 예외를 던진 경우

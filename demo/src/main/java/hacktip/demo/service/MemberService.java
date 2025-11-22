@@ -129,7 +129,7 @@ public class MemberService {
     public ResponseUserDataDto getCurrentUser(UserDetailsImpl userDetails){
         Member member = userDetails.getMember();
         List<MemberStack> memberStack = memberStackRepository.findByMember_MemberId(member.getMemberId());
-        return new ResponseUserDataDto(member.getName(), member.getRole(), memberStack);
+        return new ResponseUserDataDto(member.getMemberId(), member.getName(), member.getRole(), memberStack);
     }
 
     // 2. === [토큰 재발급 메서드 추가] ===
@@ -171,7 +171,7 @@ public class MemberService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
         // 5. 새로운 Access Token 생성
-        String newAccessToken = jwtTokenProvider.createAccessToken(email, member.getRole().getTitle());
+        String newAccessToken = jwtTokenProvider.createAccessToken(email, member.getRole().getKey());
 
         // 6. 새 Access Token을 DTO에 담아 반환
         return new TokenResponseDto(newAccessToken);

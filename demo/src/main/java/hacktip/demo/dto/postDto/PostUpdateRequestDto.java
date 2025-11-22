@@ -5,8 +5,10 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor //게시글 수정 입력 값
 public class PostUpdateRequestDto {
 
     @NotBlank(message = "제목은 필수입니다.")

@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   function initializeAdminPage() {
-    if (!app.state.user || app.state.user.role !== 'admin') {
+    if (!app.state.user || app.state.user.role !== '관리자') {
       app.utils.showNotification('접근 권한이 없습니다.', 'danger');
       setTimeout(() => { window.location.href = 'mainview.html'; }, 1500);
       return;
@@ -72,8 +72,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // [추가] 하위 호환성을 위한 멘토 상태 보정
     usersToDisplay.forEach(user => {
-      if (user.isMentor === undefined) { // id -> name
-        user.isMentor = (user.category === '재직자' || user.role === 'admin');
+      // ✅ [수정] 영문 Enum 이름 대신 한글 역할명과 비교합니다.
+      if (user.isMentor === undefined) {
+        user.isMentor = (user.role === '재직자' || user.role === '관리자');
       }
     });
 
@@ -90,13 +91,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="item-title">${user.name} (${user.email})${mentorBadge}</div>
         </div>
         <div class="item-actions">
-          <select class="select category-select" data-user-name="${user.name}" ${user.role === 'admin' ? 'disabled' : ''} style="width: 100px;">
-            <option value="취준생" ${user.category === '취준생' ? 'selected' : ''}>취준생</option>
-            <option value="재직자" ${user.category === '재직자' ? 'selected' : ''}>재직자</option>
-          </select>
-          <select class="select role-select" data-user-name="${user.name}" style="width: 90px; margin-left: 0.5rem;">
-            <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
-            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+          {/* ✅ [수정] 여러 개의 select를 하나로 통합하고, 백엔드 Role Enum과 직접 매핑합니다. */}
+          <select class="select role-select" data-user-name="${user.name}" style="width: 120px;">
+            <option value="JOB_SEEKER" ${user.role === '취준생' ? 'selected' : ''}>취준생</option>
+            <option value="INCUMBENT" ${user.role === '재직자' ? 'selected' : ''}>재직자</option>
+            <option value="ADMIN" ${user.role === '관리자' ? 'selected' : ''}>관리자</option>
           </select>
           ${mentorButtonHTML}
           <button class="btn btn--danger btn-delete-user" data-user-name="${user.name}" style="margin-left: 0.5rem;">
@@ -110,14 +109,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.userList.querySelectorAll('.btn-delete-user').forEach(button => {
       button.removeEventListener('click', handleDeleteUser); // 기존 리스너 제거 (중복 방지)
       button.addEventListener('click', handleDeleteUser);
-    });
-    elements.userList.querySelectorAll('.role-select').forEach(select => {
-       select.removeEventListener('change', handleRoleChange); // 기존 리스너 제거
-      select.addEventListener('change', handleRoleChange);
-    });
-    elements.userList.querySelectorAll('.btn-toggle-mentor').forEach(button => {
-      button.removeEventListener('click', handleMentorStatusChange);
-      button.addEventListener('click', handleMentorStatusChange);
     });
     elements.userList.querySelectorAll('.category-select').forEach(select => {
       select.removeEventListener('change', handleCategoryChange);
@@ -243,34 +234,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  async function handleRoleChange(e) {
-    const userName = e.target.dataset.userName;
-    const newRole = e.target.value;
-    const originalRole = app.state.users.find(u => u.name === userName)?.role || 'user'; // Find original role
-
-    if (confirm(`'${userName}' 사용자의 역할을 '${newRole}'(으)로 변경하시겠습니까?`)) {
-        try {
-            // Simulate API call for role update (replace with actual API if available)
-            let users = await app.api.fetchAllUsers();
-            const userIndex = users.findIndex(u => u.name === userName);
-            if (userIndex > -1) {
-                users[userIndex].role = newRole;
-                localStorage.setItem('users', JSON.stringify(users)); // Save
-                app.state.users = users; // Update state
-                app.utils.showNotification('사용자 역할이 변경되었습니다.', 'success');
-                // No need to re-render the whole list, the select value is already changed
-            } else {
-                 throw new Error('User not found');
-            }
-        } catch (error) {
-            app.utils.showNotification('역할 변경에 실패했습니다.', 'danger');
-            e.target.value = originalRole; // Revert select value on failure
-        }
-    } else {
-        e.target.value = originalRole; // Revert select value on cancel
-    }
-  }
-
   async function handleMentorStatusChange(e) {
     const userName = e.target.dataset.userName;
     const user = app.state.users.find(u => u.name === userName);
@@ -289,26 +252,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // ✅ [수정] handleCategoryChange를 handleRoleChange로 이름을 바꾸고 로직을 통합합니다.
   async function handleCategoryChange(e) {
     const userName = e.target.dataset.userName;
-    const newCategory = e.target.value;
+    const newRoleValue = e.target.value; // e.g., "JOB_SEEKER"
     const user = app.state.users.find(u => u.name === userName);
     if (!user) return;
 
-    const originalCategory = user.category;
+    // 백엔드에서 받은 한글 Role 값 (e.g., "취준생")
+    const originalRoleText = user.role; 
+    let originalRoleValue = 'JOB_SEEKER'; // 기본값 (백엔드로 보낼 값)
+    if (originalRoleText === '재직자') originalRoleValue = 'INCUMBENT';
+    if (originalRoleText === '관리자') originalRoleValue = 'ADMIN';
 
-    if (confirm(`'${userName}' 사용자의 직업 상태를 '${newCategory}'(으)로 변경하시겠습니까?`)) {
+    if (confirm(`'${userName}' 사용자의 역할을 '${e.target.options[e.target.selectedIndex].text}'(으)로 변경하시겠습니까?`)) {
         try {
-            await app.api.updateUserCategory(userName, newCategory);
-            app.utils.showNotification('사용자 직업 상태가 변경되었습니다.', 'success');
+            // 백엔드에 JOB_SEEKER, INCUMBENT, ADMIN 과 같은 Enum name을 전송합니다.
+            await app.api.updateUserRole(userName, newRoleValue);
+            app.utils.showNotification('사용자 역할이 변경되었습니다.', 'success');
             await app.initialize();
             initializeAdminPage();
         } catch (error) {
-            app.utils.showNotification('상태 변경에 실패했습니다.', 'danger');
-            e.target.value = originalCategory;
+            app.utils.showNotification('역할 변경에 실패했습니다.', 'danger');
+            e.target.value = originalRoleValue;
         }
     } else {
-        e.target.value = originalCategory;
+        e.target.value = originalRoleValue;
     }
   }
 

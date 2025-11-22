@@ -1,6 +1,6 @@
 package hacktip.demo.dto;
 
-import hacktip.demo.domain.PostComment;
+import hacktip.demo.domain.post.PostComment;
 import lombok.Getter;
 
 import java.time.LocalDateTime;

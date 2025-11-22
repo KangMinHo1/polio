@@ -1,11 +1,13 @@
 package hacktip.demo.service;
 
 import hacktip.demo.domain.Member;
-import hacktip.demo.domain.Post;
+import hacktip.demo.domain.post.Category;
+import hacktip.demo.domain.post.Post;
 import hacktip.demo.dto.postDto.PostCreateRequestDto;
 import hacktip.demo.dto.postDto.PostResponseDto;
 import hacktip.demo.dto.postDto.PostSimpleResponseDto;
 import hacktip.demo.dto.postDto.PostUpdateRequestDto;
+import hacktip.demo.repository.CategoryRepository;
 import hacktip.demo.repository.MemberRepository;
 import hacktip.demo.repository.PostRepository;
 import jakarta.transaction.Transactional;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -22,6 +25,8 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
+
+    private final CategoryRepository categoryRepository;
 
     /**
      * 1. 게시물 생성
@@ -34,16 +39,20 @@ public class PostService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
+        Category category = categoryRepository.findByCategoryName(requestDto.getCategory())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+
         // 2. (조립) DTO의 내용물과 Member 엔티티를 Post.builder()에 주입
         Post post = Post.builder()
                 .member(member) // 3. (중요) 엔티티는 DTO가 아닌 Member 객체를 받음
                 .title(requestDto.getTitle())
                 .content(requestDto.getContent())
-                .category(requestDto.getCategory())
+                .category(category)
+                .githubUrl(requestDto.getGithubUrl())
                 .build();
 
-
         Post savedPost = postRepository.save(post);
+
 
         return new PostResponseDto(savedPost);
     }
@@ -97,6 +106,9 @@ public class PostService {
         Member requestingMember = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다,"));
 
+        Category category = categoryRepository.findByCategoryName(requestDto.getCategory())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+
         // 3. (핵심: 인가) "요청한 사용자"와 "게시물 작성자"가 일치하는지 검사
         if (!post.getMember().getMemberId().equals(requestingMember.getMemberId())) {
             // 4. (실패) 일치하지 않으면 "접근 거부(403)" 예외 발생
@@ -104,7 +116,7 @@ public class PostService {
         }
 
         // --- (인가 통과) ---
-        post.update(requestDto.getTitle(), requestDto.getContent(), requestDto.getCategory());
+        post.update(requestDto.getTitle(), requestDto.getContent(), category);
 
         return new PostResponseDto(post);
     }
@@ -133,6 +145,25 @@ public class PostService {
         // --- (인가 통과) ---
         // 5. (삭제) DB에서 게시물 삭제
         postRepository.delete(post);
+    }
+
+    /**
+     * 6. 카테고리별 게시물 목록 조회 (최신순)
+     * @param categoryName 조회할 카테고리 이름
+     * @return 해당 카테고리의 게시물 목록
+     */
+    @Transactional
+    public List<PostSimpleResponseDto> getPostsByCategory(String categoryName) {
+        // 1. 카테고리 존재 여부 확인 (선택적이지만, 유효하지 않은 카테고리 요청에 대해 빠른 실패를 유도)
+        if (!categoryRepository.existsByCategoryName(categoryName)) {
+            throw new IllegalArgumentException("존재하지 않는 카테고리입니다: " + categoryName);
+        }
+
+        // 2. Repository에 추가한 쿼리 메서드를 호출하여 게시물 목록 조회
+        List<Post> posts = postRepository.findAllByCategory_CategoryNameOrderByCreateDateDesc(categoryName);
+
+        // 3. (변환) List<Post> -> List<PostSimpleResponseDto>
+        return posts.stream().map(PostSimpleResponseDto::new).collect(Collectors.toList());
     }
 
 }

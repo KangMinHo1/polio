@@ -1,5 +1,6 @@
-package hacktip.demo.domain;
+package hacktip.demo.domain.post;
 
+import hacktip.demo.domain.Member;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

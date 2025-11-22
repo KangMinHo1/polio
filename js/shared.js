@@ -54,6 +54,7 @@ window.CommunityApp = { // ◀ 최상위 객체
         notification.addEventListener('transitionend', () => notification.remove());
       }, 3000);
     },
+
     //사용자가 글 내용에 @사용자ID 형식으로 다른 사람을 언급(멘션)했을 때, 이를 감지하여 해당 사용자에게 알림을 보내는 복잡한 로직을 처리합니다
     async parseMentionsAndCreateNotifications(content, link, authorUser) {
         const users = await window.CommunityApp.api.fetchAllUsers();
@@ -69,7 +70,8 @@ window.CommunityApp = { // ◀ 최상위 객체
             }
         }
         for (const userId of mentionedUserIds) {
-            const notificationData = { id: Date.now() + Math.random(), targetUserId: userId, authorId: authorUser.name, authorCategory: authorUser.category, content: content, link: link, isRead: false, createdAt: Date.now() };
+            // ✅ [수정] authorUser.category 대신 authorUser.role을 사용합니다.
+            const notificationData = { id: Date.now() + Math.random(), targetUserId: userId, authorId: authorUser.name, authorCategory: authorUser.role, content: content, link: link, isRead: false, createdAt: Date.now() };
             await window.CommunityApp.api.createNotification(notificationData);
         }
     }
@@ -120,6 +122,12 @@ window.CommunityApp = { // ◀ 최상위 객체
     async fetchPosts() { //게시물 전체 목록 조회
       return this.request('/api/posts');
     },
+    async fetchPostById(postId) { // ✅ [추가] 단일 게시물 조회
+      return this.request(`/api/posts/${postId}`);
+    },
+    async fetchAllUsers() { // ✅ [추가] 모든 사용자 목록 조회
+      return this.request('/api/admin/users');
+    },
     async createPost(postData) {
       return this.request('/api/posts', { method: 'POST', body: JSON.stringify(postData) });
     },
@@ -145,7 +153,6 @@ window.CommunityApp = { // ◀ 최상위 객체
             // 이 요청에는 위에서 저장한 accessToken이 자동으로 포함됩니다.
 
             const user = await this.request('/me'); // 로그인한 사용자의 name, role, memberStack의 정보가 담김
-            
             
             window.CommunityApp.state.user = user; // 사용자의 정보 로컬에 저장하기
 
@@ -191,12 +198,11 @@ window.CommunityApp = { // ◀ 최상위 객체
     async toggleLike(postId) {
         return this.request(`/api/posts/${postId}/like`, { method: 'POST' });
     },
-    async getMyStacks(userName) {
-      if (userName) {
-        // 다른 사용자의 스택을 가져오는 API (백엔드 구현 필요)
-        return this.request(`/members/${userName}/stacks`);
-      }
+    async getMyStacks() {
       return this.request('/members/me/stacks'); // 내 스택을 가져오는 API
+    },
+    async getStacksByUserName(userName) { // ✅ [추가] 사용자 이름으로 기술 스택을 가져오는 API
+      return this.request(`/api/members/${userName}/stacks`);
     }
   },
 
@@ -207,7 +213,8 @@ window.CommunityApp = { // ◀ 최상위 객체
       const user = window.CommunityApp.state.user; // name, role
       if (user && typeof user === 'object' && user.name) {
         const userDisplay = `(${user.role}) ${user.name}님`;
-        const adminButtonHTML = user.role === 'admin' ? `<a class="nav-btn" href="admin.html">관리자</a>` : '';
+        // ✅ [수정] 'admin' 대신 백엔드에서 받은 한글 역할명 '관리자'와 비교합니다.
+        const adminButtonHTML = user.role === '관리자' ? `<a class="nav-btn" href="admin.html">관리자</a>` : '';
         userActions.innerHTML = `${adminButtonHTML}<a id="user-display-link" class="nav-btn" href="profile.html?user=${user.name}">${userDisplay}</a><button id="logout-button" class="btn btn--ghost">로그아웃</button>`;
         const logoutButton = document.getElementById('logout-button');
         if (logoutButton && !logoutButton.dataset.listenerAttached) {
@@ -279,7 +286,8 @@ window.CommunityApp = { // ◀ 최상위 객체
     // 이렇게 하면 관리자가 역할을 변경했을 때도 새로고침 시 즉시 반영됩니다.
     if (localStorage.getItem('accessToken')) {
         try {
-            const userInfo = await this.api.request('/me'); // 서버에서 받은 최신 정보로 state와 localStorage를 모두 덮어씁니다.
+            // 서버에서 받은 최신 정보로 state와 localStorage를 모두 덮어씁니다.
+            const userInfo = await this.api.request('/me');
             this.state.user = userInfo;
             localStorage.setItem('user', JSON.stringify(userInfo));
         } catch (e) {
@@ -298,9 +306,40 @@ window.CommunityApp = { // ◀ 최상위 객체
     this.state.isDarkMode = savedTheme;
     document.documentElement.classList.toggle('dark', savedTheme);
 
-    // 3. Load Core Data (이제 각 페이지에서 필요 시 로드)
-    // try { this.state.posts = await this.api.fetchPosts(); } catch(e) { console.error("Failed to load posts", e); this.state.posts = []; }
-    // try { this.state.users = await this.api.fetchAllUsers(); } catch(e) { console.error("Failed to load users", e); this.state.users = []; }
+
+    try {
+      // 로그인 여부와 상관없이 카테고리 데이터를 항상 불러옴
+      // ✅ [수정] 백엔드 컨트롤러의 @GetMapping("categorys")와 일치하도록 URL을 수정합니다.
+      const response = await this.api.request("/api/posts/categorys");
+      // ✅ [수정] 응답 객체에서 'categorys' 배열을 추출하여 state에 저장합니다.
+      this.state.categories = response.categorys;
+    } catch(e) {
+      console.error("Failed to load categories", e);
+      this.state.categories = []; // 실패 시 빈 배열로 초기화
+    }
+
+    try {
+      // 게시글 전체 목록을 불러와 app.state.posts에 저장합니다.
+      const posts = await this.api.fetchPosts();
+      // ✅ [수정] 백엔드 DTO의 category가 이미 문자열이므로, 불필요한 가공 로직을 제거합니다.
+      // createDate를 프론트엔드에서 사용하는 createdAt으로만 변경합니다.
+      this.state.posts = posts.map(post => ({
+        ...post,
+        createdAt: post.createDate
+      }));
+    } catch(e) {
+      console.error("Failed to load posts", e);
+      this.state.posts = []; // 실패 시 빈 배열로 초기화
+    }
+
+    // ✅ [추가] 관리자 또는 프로필 페이지에서 사용하기 위해 모든 사용자 정보를 미리 불러옵니다.
+    try {
+      // 이 API는 관리자 권한이 필요할 수 있으므로, 실패하더라도 앱 실행에 영향을 주지 않도록 처리합니다.
+      this.state.users = await this.api.fetchAllUsers();
+    } catch (e) {
+      console.warn("Failed to load all users. This might be due to permissions.", e.message);
+      this.state.users = [];
+    }
 
     // 4. Update UI
     this.ui.updateLoginStatus();
@@ -315,6 +354,10 @@ window.CommunityApp = { // ◀ 최상위 객체
     if (this.state.user) {
       this.ui.updateNotificationBadge().catch(e => console.error("Failed to update notification badge", e));
     }
+
+    // ✅ [추가] 모든 핵심 데이터 로딩이 완료되었음을 알리는 이벤트를 발생시킵니다.
+    // 각 페이지(write.js, posts.js 등)는 이 이벤트를 수신하여 UI를 렌더링합니다.
+    document.dispatchEvent(new CustomEvent('app-data-loaded'));
 
     console.log('CommunityApp initialized.');
   },

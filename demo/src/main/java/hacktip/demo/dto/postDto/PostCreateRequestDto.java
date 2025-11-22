@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Getter
 @NoArgsConstructor //(게시물 생성 요청)
 public class PostCreateRequestDto {
@@ -17,5 +19,7 @@ public class PostCreateRequestDto {
     private String content;
 
     private String category;
+
+    private String githubUrl;
 
 }

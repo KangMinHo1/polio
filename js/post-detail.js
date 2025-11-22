@@ -12,67 +12,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const urlParams = new URLSearchParams(window.location.search);
-    const postId = parseInt(urlParams.get('id'), 10);
+    const postId = parseInt(urlParams.get('id'), 10); //게시글 PK 문자열 -> 숫자로 변환
 
-    if (!postId || isNaN(postId)) {
+    if (!postId || isNaN(postId)) { // 게시글 pk가 없으면 오류
         elements.container.innerHTML = '<p>잘못된 접근입니다. 게시글 ID가 없습니다.</p>';
         return;
     }
 
-    const post = app.state.posts.find((p) => p.id === postId);
+    
+    let post;
+    try {
+        post = await app.api.fetchPostById(postId); // 서버에 해당 게시글에 내용 요청
+        // 서버 DTO 필드명을 프론트엔드에서 사용하는 필드명으로 변환.
+        post.createdAt = post.createDate;
+        post.portfolioLink = post.githubUrl;
+    } catch (error) {
+        console.error("Failed to fetch post:", error);
+        elements.container.innerHTML = `<p>${error.message || '게시글을 불러오는 데 실패했습니다.'}</p>`;
+        return;
+    }
 
     if (!post) {
         elements.container.innerHTML = '<p>해당 게시글을 찾을 수 없습니다.</p>';
         return;
     }
 
-    // --- 함수들 (posts.js에서 가져옴) ---
+    //함수 정의
     
+    //게시글이나 댓글의 작성자 이름을 클릭했을 때, 해당 사용자의 프로필 페이지로 이동시켜주는 기능
     function handleAuthorClick(e) {
         const authorId = e.target.dataset.authorId;
         if (!authorId) return;
         window.location.href = `profile.html?user=${encodeURIComponent(authorId)}`;
-    }
-
-    async function handleLikeClick(postId) {
-        const likedPostIds = JSON.parse(localStorage.getItem('likedPostIds') || '[]');
-        const postIndex = app.state.posts.findIndex(p => p.id === postId);
-        if (postIndex === -1) return;
-
-        const post = app.state.posts[postIndex];
-        const likeIndex = likedPostIds.indexOf(postId);
-
-        if (likeIndex > -1) {
-            likedPostIds.splice(likeIndex, 1);
-            post.likes = (post.likes || 1) - 1;
-        } else {
-            likedPostIds.push(postId);
-            post.likes = (post.likes || 0) + 1;
-        }
-
-        localStorage.setItem('likedPostIds', JSON.stringify(likedPostIds));
-        await app.api.updatePost(postId, { likes: post.likes });
-        renderPostDetail(); // Re-render
-    }
-
-    async function handleInsightPostClick(postId) {
-        if (!currentUser) return;
-        await app.api.addInsightPost(postId, currentUser.id);
-        renderPostDetail(); // Re-render
-    }
-
-    async function handleBookmarkClick(postId) {
-        if (!currentUser) return;
-        await app.api.toggleBookmark(postId, currentUser.id);
-        renderPostDetail(); // Re-render
-    }
-
-    async function handleMarkAsResolved(postId) {
-        if (confirm('피드백 요청을 "해결됨"으로 표시하시겠습니까?')) {
-            await app.api.markPostAsResolved(postId);
-            app.utils.showNotification('요청이 해결됨으로 표시되었습니다.', 'success');
-            renderPostDetail(); // Re-render
-        }
     }
 
     async function handleCommentSubmit(e, post) {
@@ -86,28 +57,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         contentEl.value = '';
         loadComments(post); // Re-load comments
-    }
-
-    // 댓글의 '도움됨' 버튼 클릭 핸들러
-    async function handleUpvoteClick(commentId) {
-        if (!currentUser) return;
-        await app.api.upvoteComment(commentId, currentUser.id);
-        loadComments(post); // 댓글 목록 새로고침
-    }
-
-    // 댓글의 '인사이트' 버튼 클릭 핸들러
-    async function handleInsightCommentClick(commentId) {
-        if (!currentUser) return;
-        await app.api.addInsightComment(commentId, currentUser.id);
-        loadComments(post); // 댓글 목록 새로고침
-    }
-
-    // '베스트 피드백' 채택 핸들러
-    async function handleSelectBestClick(postId, commentId) {
-        if (confirm('이 댓글을 베스트 피드백으로 채택하시겠습니까?')) {
-            await app.api.selectBestComment(postId, commentId);
-            loadComments(post); // 댓글 목록 새로고침
-        }
     }
 
     // 댓글 삭제 핸들러
@@ -161,10 +110,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!commentList) return;
         
         const comments = await app.api.fetchComments(post.id);
-        const isPostAuthor = currentUser && currentUser.id === post.author;
+        // ✅ [수정] currentUser.id 대신 currentUser.name과 비교합니다.
+        const isPostAuthor = currentUser && currentUser.name === post.author;
 
         commentList.innerHTML = comments.length > 0 ? comments.map(comment => {
-            const isCommentAuthor = currentUser && currentUser.id === comment.author;
+            const isCommentAuthor = currentUser && currentUser.name === comment.author;
             let authorActions = '';
             if (isCommentAuthor) {
                 authorActions = `
@@ -172,15 +122,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <button class="btn-comment-action btn-delete-comment" data-comment-id="${comment.id}">삭제</button>
                 `;
             }
-
-            const upvoted = currentUser && comment.upvotes && comment.upvotes.includes(currentUser.id);
-            const insighted = currentUser && comment.insights && comment.insights.includes(currentUser.id);
-            const reactionButton = post.postType === 'casestudy'
-                ? `<button class="btn btn--ghost btn-insight ${insighted ? 'is-active' : ''}" data-comment-id="${comment.id}">💡 인사이트 (${(comment.insights || []).length})</button>`
-                : `<button class="btn btn--ghost btn-upvote ${upvoted ? 'is-active' : ''}" data-comment-id="${comment.id}">👍 도움됨 (${(comment.upvotes || []).length})</button>`;
-            
-            const bestButton = isPostAuthor && !post.isResolved && !comment.isBest && post.postType !== 'casestudy'
-                ? `<button class="btn btn--ghost btn-select-best" data-comment-id="${comment.id}">🏆 베스트 채택</button>` : '';
 
             return `
                 <li class="comment-item ${comment.isBest ? 'is-best' : ''}" id="comment-${comment.id}">
@@ -190,28 +131,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <div class="comment-author-actions">${authorActions}</div>
                     </div>
                     <div class="comment-content-wrapper"><div class="comment-content">${comment.content.replace(/\n/g, '<br>')}</div></div>
-                    <div class="comment-actions">${reactionButton}${bestButton}</div>
-                    ${comment.isBest ? '<div class="best-badge">🏆 베스트 피드백</div>' : ''}
+                    <div class="comment-actions"></div>
                 </li>
             `;
         }).join('') : '<li>아직 댓글이 없습니다.</li>';
 
         // 이벤트 리스너 동적 바인딩
         commentList.querySelectorAll('.comment-author').forEach(el => el.addEventListener('click', handleAuthorClick));
-        commentList.querySelectorAll('.btn-upvote').forEach(btn => btn.addEventListener('click', () => handleUpvoteClick(parseInt(btn.dataset.commentId))));
-        commentList.querySelectorAll('.btn-insight').forEach(btn => btn.addEventListener('click', () => handleInsightCommentClick(parseInt(btn.dataset.commentId))));
-        commentList.querySelectorAll('.btn-select-best').forEach(btn => btn.addEventListener('click', () => handleSelectBestClick(post.id, parseInt(btn.dataset.commentId))));
         commentList.querySelectorAll('.btn-delete-comment').forEach(btn => btn.addEventListener('click', () => handleDeleteComment(parseInt(btn.dataset.commentId))));
         commentList.querySelectorAll('.btn-edit-comment').forEach(btn => btn.addEventListener('click', () => handleEditComment(parseInt(btn.dataset.commentId), unescape(btn.dataset.commentContent))));
     }
 
     // --- 상세 페이지 렌더링 함수 ---
     async function renderPostDetail() {
-        // 조회수 증가
+        // ✅ [수정] 조회수 증가 로직을 클라이언트 측에서만 처리하고, 서버 업데이트 API 호출을 제거합니다.
+        // 페이지를 방문할 때마다 로컬 state의 조회수만 1 증가시킵니다.
         post.views = (post.views || 0) + 1;
-        await app.api.updatePost(postId, { views: post.views });
 
-        const postType = post.postType || 'feedback';
+        const postType = 'feedback'; // ✅ [수정] 케이스 스터디 제거
         const authorCategory = post.authorCategory || '사용자';
 
         let portfolioLinkHTML = '';
@@ -224,16 +161,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const authorHTML = `<span class="post-author-link" data-author-id="${post.author}" title="클릭해서 프로필 보기">(${authorCategory}) ${post.author}</span>`;
 
-        let resolvedHTML = '';
-        const isPostAuthor = currentUser && currentUser.id === post.author;
+        let actionsHTML = '';
+        // ✅ [수정] currentUser.id 대신 currentUser.name과 비교합니다.
+        const isPostAuthor = currentUser && currentUser.name === post.author;
 
-        if (postType === 'feedback') {
-            if (post.isHiredSuccess) { resolvedHTML = `<div class="post-hired-badge">🎉 취업 성공 사례</div>`; }
-            else if (post.isResolved) { resolvedHTML = `<div class="post-resolved-badge">✅ 피드백이 해결된 요청입니다.</div>`; }
-            else if (isPostAuthor) {
-                const editButtonHTML = `<a href="write.html?edit=${post.id}" class="btn btn--ghost" style="margin-right: 0.5rem;">✏️ 수정하기</a>`;
-                resolvedHTML = `<div class="post-actions" style="margin-bottom: 1.5rem;">${editButtonHTML}<button id="mark-resolved-btn" class="btn btn--success" data-post-id="${post.id}">✅ 피드백 완료 (해결됨으로 표시)</button></div>`;
-            }
+        if (isPostAuthor) {
+            const editButtonHTML = `<a href="write.html?edit=${post.id}" class="btn btn--ghost" style="margin-right: 0.5rem;">✏️ 수정하기</a>`;
+            actionsHTML = `<div class="post-actions" style="margin-bottom: 1.5rem;">${editButtonHTML}</div>`;
         }
 
         let postActionsHTML = '';
@@ -242,75 +176,42 @@ document.addEventListener('DOMContentLoaded', async () => {
             const isBookmarked = post.bookmarkedBy && post.bookmarkedBy.includes(currentUser.id);
             bookmarkButtonHTML = `<button id="btn-bookmark" class="btn btn--ghost btn-bookmark ${isBookmarked ? 'is-active' : ''}" data-post-id="${post.id}">${isBookmarked ? '📌 스크랩 취소' : '📌 스크랩하기'}</button>`;
         }
-        if (postType === 'casestudy') {
-            const hasInsight = currentUser && post.insights && post.insights.includes(currentUser.id);
-            postActionsHTML = `<button id="btn-insight-post" class="btn btn--ghost btn-insight ${hasInsight ? 'is-active' : ''}" data-post-id="${post.id}" ${!currentUser ? 'disabled' : ''}>💡 인사이트+ (${(post.insights || []).length})</button>`;
-        } else {
-            const likedPostIds = JSON.parse(localStorage.getItem('likedPostIds') || '[]');
-            const hasLiked = likedPostIds.includes(postId);
-            postActionsHTML = `<button id="like-button-${post.id}" class="btn ${hasLiked ? 'btn--primary' : ''}">❤️ 좋아요 (${post.likes || 0})</button>`;
-        }
+        const likedPostIds = JSON.parse(localStorage.getItem('likedPostIds') || '[]');
+        const hasLiked = likedPostIds.includes(postId);
+        // ✅ [수정] 케이스 스터디 제거, '좋아요' 버튼으로 통일
+        postActionsHTML = `<button id="like-button-${post.id}" class="btn ${hasLiked ? 'btn--primary' : ''}">❤️ 좋아요 (${post.likes || 0})</button>`;
 
         let contentHTML = '';
-        let feedbackTagsHTML = '';
-
-        if (postType === 'feedback') {
-            try {
-                const data = JSON.parse(post.content);
-                const escapeHTML = (str) => (str || '').replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
-
-                if (data.projects && Array.isArray(data.projects)) {
-                    contentHTML += data.projects.map((project, index) => {
-                        let projectHTML = `<h3 class="template-header">프로젝트 ${index + 1}: ${escapeHTML(project.title)}</h3>`;
-                        if(project.link) projectHTML += `<p class="template-field"><strong>링크:</strong> <a href="${project.link.startsWith('http') ? project.link : 'http://' + project.link}" target="_blank" rel="noopener noreferrer">${escapeHTML(project.link)}</a></p>`;
-                        if(project.techStack) projectHTML += `<p class="template-field"><strong>기술 스택:</strong> ${escapeHTML(project.techStack)}</p>`;
-                        if(project.desc) projectHTML += `<div class="template-content-box">${escapeHTML(project.desc)}</div>`;
-                        return projectHTML;
-                    }).join('');
-                }
-
-                if(data.questions) {
-                     contentHTML += `<h3 class="template-header">가장 피드백 받고 싶은 점</h3>`;
-                     contentHTML += `<div class="template-content-box is-question">${escapeHTML(data.questions)}</div>`;
-                }
-
-                if (data.feedbackTags && data.feedbackTags.length > 0) {
-                    feedbackTagsHTML = `
-                      <h3 class="template-header" style="margin-top: 2rem;">주요 요청 분야</h3>
-                      <div class="post-tags">
-                        ${data.feedbackTags.map(tag => `<span class="post-tag">#${escapeHTML(tag)}</span>`).join('')}
-                      </div>
-                    `;
-                }
-
-                if (contentHTML.trim() === '') { throw new Error('Fallback to old data'); }
-            } catch (e) { contentHTML = post.content.replace(/\n/g, '<br>'); }
-        } else { contentHTML = post.content.replace(/\n/g, '<br>'); }
+        
+        // ✅ [수정] content가 순수 문자열이므로, JSON 파싱 없이 바로 표시합니다.
+        const escapeHTML = (str) => (str || '').replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
+        contentHTML += `<h3 class="template-header">가장 피드백 받고 싶은 점</h3>`;
+        contentHTML += `<div class="template-content-box is-question">${escapeHTML(post.content)}</div>`;
 
         elements.container.innerHTML = `
             <h1>${post.title}</h1>
             <div class="post-meta">
-                <span>[${post.category}]</span>
+                {/* ✅ [수정] post.categories 배열 대신, 일관성을 위해 단일 문자열 post.category를 사용합니다. */}
+                <span>[${post.category || '기타'}]</span>
                 <span>작성자: ${authorHTML}</span>
                 <span>${app.utils.formatDate(post.createdAt)}</span>
             </div>
-            ${resolvedHTML}
+            ${actionsHTML}
             ${portfolioLinkHTML}
             ${fileAttachmentHTML}
             <div class="post-content">
                 ${contentHTML}
-                ${feedbackTagsHTML}
             </div>
             <div class="post-actions">
                 ${postActionsHTML}
                 ${bookmarkButtonHTML}
             </div>
             <div class="comment-section">
-              <h3 class="comment-title">💬 ${postType === 'casestudy' ? '토론' : '피드백'}</h3>
+              <h3 class="comment-title">💬 피드백</h3>
               <form id="comment-form" class="comment-form">
-                <textarea id="comment-content" rows="3" placeholder="${currentUser ? (postType === 'casestudy' ? '의견을 남겨주세요...' : '피드백을 남겨주세요... (예: @admin)') : '로그인 후 댓글을 남길 수 있습니다.'}" ${!currentUser ? 'disabled' : ''}></textarea>
+                <textarea id="comment-content" rows="3" placeholder="${currentUser ? '피드백을 남겨주세요... (예: @admin)' : '로그인 후 댓글을 남길 수 있습니다.'}" ${!currentUser ? 'disabled' : ''}></textarea>
                 <div class="comment-form-actions">
-                  <button type="submit" class="btn btn--primary" ${!currentUser ? 'disabled' : ''}>${postType === 'casestudy' ? '의견 등록' : '피드백 등록'}</button>
+                  <button type="submit" class="btn btn--primary" ${!currentUser ? 'disabled' : ''}>피드백 등록</button>
                 </div>
               </form>
               <ul id="comment-list" class="comment-list"><li>댓글 로딩 중...</li></ul>
@@ -320,14 +221,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 이벤트 리스너 동적 바인딩
         const authorLink = elements.container.querySelector('.post-author-link');
         if (authorLink) authorLink.addEventListener('click', handleAuthorClick);
-        const markResolvedBtn = document.getElementById('mark-resolved-btn');
-        if (markResolvedBtn) markResolvedBtn.addEventListener('click', () => handleMarkAsResolved(post.id));
-        const likeButton = document.getElementById(`like-button-${post.id}`);
-        if (likeButton) likeButton.addEventListener('click', () => handleLikeClick(post.id));
-        const insightPostBtn = document.getElementById('btn-insight-post');
-        if (insightPostBtn) insightPostBtn.addEventListener('click', () => handleInsightPostClick(post.id));
-        const bookmarkBtn = document.getElementById('btn-bookmark');
-        if (bookmarkBtn) bookmarkBtn.addEventListener('click', () => handleBookmarkClick(post.id));
 
         loadComments(post);
         const commentForm = document.getElementById('comment-form');

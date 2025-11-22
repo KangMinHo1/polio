@@ -14,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 public class ResponseUserDataDto {
 
+    private Long id;
     private String name;
     private Role role;
     List<MemberStack> memberStack;

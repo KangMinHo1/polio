@@ -13,7 +13,6 @@ function renderUserPosts(userPosts, currentUser, profileUser) {
         postsList.innerHTML = userPosts.map(post => {            let actionButtonHTML = '';
             let tag = '';
             if (post.postType === 'casestudy') { tag = '<span style="color: var(--color-highlight);">[💡 스터디]</span>'; }
-            else if (post.isResolved) { tag = '<span style="color: #16A34A;">[해결]</span>'; }
 
             return `
               <li class="profile-list-item">
@@ -82,8 +81,6 @@ function renderBookmarks(allPosts, currentUser, profileUser) {
         bookmarksList.innerHTML = bookmarkedPosts.map(post => {
             let tag = '';
             if (post.postType === 'casestudy') { tag = '<span style="color: var(--color-highlight);">[💡 스터디]</span>'; }
-            else if (post.isHiredSuccess) { tag = '<span style="color: #D97706;">[🎉 성공]</span>'; }
-            else if (post.isResolved) { tag = '<span style="color: #16A34A;">[해결]</span>'; }
             
             return `
               <li class="profile-list-item" onclick="location.href='posts.html#post-${post.id}'" style="cursor: pointer;">
@@ -195,11 +192,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function initializeProfilePage() {
-        const allUsers = await app.api.fetchAllUsers(); // 전체 사용자 목록을 서버에서 다시 가져옵니다.
+        const allUsers = app.state.users;
         const allPosts = app.state.posts;
-        const allComments = await app.api.fetchAllComments(); 
 
-        const profileUser = allUsers.find(u => u.name === targetUserId);
+        const profileUser = allUsers.find(u => u.name === targetUserId); // ✅ [수정] id 대신 name으로 찾습니다.
 
         if (!profileUser) {
             elements.userId.textContent = '존재하지 않는 사용자입니다.';
@@ -208,15 +204,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // [수정] 하위 호환성을 위한 멘토 상태 보정
         // isMentor 속성이 없는 구버전 데이터의 경우, 재직자나 관리자이면 멘토로 간주합니다.
+        // ✅ [수정] 영문 Enum 이름 대신 한글 역할명과 비교합니다.
         if (profileUser.isMentor === undefined) {
-            profileUser.isMentor = (profileUser.category === '재직자' || profileUser.role === 'admin');
+            profileUser.isMentor = (profileUser.role === '재직자' || profileUser.role === '관리자');
         }
 
         elements.userId.textContent = profileUser.name;
         elements.userCategory.textContent = profileUser.role || '사용자';
 
         // --- 평판 계산 ---
-        const userComments = allComments.filter(c => c.author === profileUser.name);
+        const userComments = (await app.api.fetchAllComments() || []).filter(c => c.author === profileUser.name);
         const userPosts = allPosts.filter(p => p.author === profileUser.name);
 
         const totalBestAnswers = userComments.filter(c => c.isBest).length;
@@ -237,10 +234,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // --- 기술 스택 렌더링 ---
         // 프로필 주인의 기술 스택을 가져와서 표시합니다.
-        // 백엔드에 /members/{userId}/stacks 와 같은 API가 필요합니다.
         try {
-            // 임시로 getMyStacks를 사용하지만, 실제로는 profileUser.id를 사용해야 합니다.
-            const stacks = await app.api.getMyStacks(profileUser.name);
+            let stacks = [];
+            // ✅ [수정] 자신의 프로필을 볼 때만 기술 스택을 가져옵니다.
+            // 다른 사용자의 스택을 가져오는 API는 백엔드 구현이 필요합니다.
+            if (currentUser && currentUser.name === profileUser.name) {
+                stacks = await app.api.getMyStacks();
+            }
             renderTechStacks(stacks);
         } catch (error) {
             console.error("Failed to fetch tech stacks:", error);
@@ -248,7 +248,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // --- 멘토 토글 설정 ---
         // 멘토 기능 활성화 여부는 profileUser.isMentor 값으로 직접 판단합니다.
-        await setupMentorApplication(app, profileUser, currentUser, profileUser.isMentor); // 내부 로직은 id 대신 name 사용
         
         const applications = await app.api.fetchMentorApplications();
         const userApplication = applications.find(a => a.userId === profileUser.name);

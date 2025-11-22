@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const popularPostList = document.querySelector('.card-grid--solid');
     if (!popularPostList) return;
     const topPostsByLikes = [...app.state.posts]
-      .filter(post => post.category !== '공지' && post.postType !== 'casestudy')
+      .filter(post => post.category !== '공지') // ✅ [수정] 케이스 스터디 필터 제거
       .sort((a, b) => (b.likes || 0) - (a.likes || 0))
       .slice(0, 4);
     if (topPostsByLikes.length === 0) {
@@ -40,7 +40,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderLatestNotices() {
     const noticeList = document.getElementById('notice-list');
     if (!noticeList) return;
-    const notices = app.state.posts.filter(post => post.category === '공지');
+    // ✅ [수정] post.categories 배열에 '공지'가 포함되어 있는지 확인합니다.
+    const notices = app.state.posts.filter(post => post.categories && post.categories.includes('공지'));
     const latestNotices = notices
         .sort((a, b) => b.createdAt - a.createdAt)
         .slice(0, 5);
@@ -61,7 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderImportantPosts() {
     const importantPostList = document.getElementById('home-important-post-list');
     if (!importantPostList) return;
-    const importantPosts = app.state.posts.filter(post => post.isImportant === true && post.category !== '공지');
+    const importantPosts = app.state.posts.filter(post => post.isImportant === true && post.categories && !post.categories.includes('공지'));
     const latestImportantPosts = importantPosts
         .sort((a, b) => b.createdAt - a.createdAt)
         .slice(0, 5);
@@ -69,64 +70,49 @@ document.addEventListener('DOMContentLoaded', async () => {
       importantPostList.innerHTML = `<li style="padding: 1rem 0; color: var(--text-secondary);">추천 포트폴리오가 없습니다.</li>`;
       return;
     }
-    importantPostList.innerHTML = latestImportantPosts.map(post => `
-      <li class="post-item" data-post-id="${post.id}" onclick="location.href='posts.html#post-${post.id}'">
-        <div class="post-item-title">[${post.category}] ${post.title}</div>
-        <div class="post-item-meta">
-          <span>(${post.authorCategory || '사용자'}) ${post.author}</span> •
-          <span>${app.utils.formatDate(post.createdAt)}</span> •
-          <span>조회 ${post.views || 0}</span>
-        </div>
-      </li>
-    `).join('');
+    importantPostList.innerHTML = latestImportantPosts.map(post => {
+      const authorInfo = app.state.users.find(u => u.name === post.author);
+      const authorCategory = authorInfo ? authorInfo.role : '사용자';
+      return `
+        <li class="post-item" data-post-id="${post.id}" onclick="location.href='posts.html#post-${post.id}'">
+          <div class="post-item-title">[${post.category}] ${post.title}</div>
+          <div class="post-item-meta">
+            <span>(${authorCategory}) ${post.author}</span> •
+            <span>${app.utils.formatDate(post.createdAt)}</span> •
+            <span>조회 ${post.views || 0}</span>
+          </div>
+        </li>
+      `;
+    }).join('');
   }
   
   function renderLatestPosts() {
     const postList = document.getElementById('home-post-list');
     if (!postList) return;
     const latestPosts = app.state.posts
-        .filter(post => post.category !== '공지' && post.postType === 'feedback')
+        .filter(post => post.categories && !post.categories.includes('공지') && post.postType === 'feedback')
         .sort((a, b) => b.createdAt - a.createdAt)
         .slice(0, 5);
     if (latestPosts.length === 0) {
         postList.innerHTML = `<li style="padding: 1rem 0; color: var(--text-secondary);">최신 피드백 요청이 없습니다.</li>`;
         return;
     }
-    postList.innerHTML = latestPosts.map(post => `
-      <li class="post-item" data-post-id="${post.id}" onclick="location.href='post-detail.html?id=${post.id}'">
-        <div class="post-item-title">[${post.category}] ${post.title}</div>
-        <div class="post-item-meta">
-           <span>(${post.authorCategory || '사용자'}) ${post.author}</span> •
-          <span>${app.utils.formatDate(post.createdAt)}</span> •
-          <span>조회 ${post.views || 0}</span>
-        </div>
-      </li>
-    `).join('');
+    postList.innerHTML = latestPosts.map(post => {
+      const authorInfo = app.state.users.find(u => u.name === post.author);
+      const authorCategory = authorInfo ? authorInfo.role : '사용자';
+      return `
+        <li class="post-item" data-post-id="${post.id}" onclick="location.href='post-detail.html?id=${post.id}'">
+          <div class="post-item-title">[${post.category}] ${post.title}</div>
+          <div class="post-item-meta">
+            <span>(${authorCategory}) ${post.author}</span> •
+            <span>${app.utils.formatDate(post.createdAt)}</span> •
+            <span>조회 ${post.views || 0}</span>
+          </div>
+        </li>
+      `;
+    }).join('');
   }
   
-  function renderLatestCaseStudies() {
-    const caseStudyList = document.getElementById('home-casestudy-list');
-    if (!caseStudyList) return; 
-    const latestCaseStudies = app.state.posts
-        .filter(post => post.postType === 'casestudy')
-        .sort((a, b) => b.createdAt - a.createdAt)
-        .slice(0, 5);
-    if (latestCaseStudies.length === 0) {
-        caseStudyList.innerHTML = `<li style="padding: 1rem 0; color: var(--text-secondary);">최신 케이스 스터디가 없습니다.</li>`;
-        return;
-    }
-    caseStudyList.innerHTML = latestCaseStudies.map(post => `
-      <li class="post-item" data-post-id="${post.id}" onclick="location.href='posts.html#post-${post.id}'">
-        <div class="post-item-title">[${post.category}] ${post.title}</div>
-        <div class="post-item-meta">
-           <span>(${post.authorCategory || '사용자'}) ${post.author}</span> •
-           <span>${app.utils.formatDate(post.createdAt)}</span> •
-           <span>💡 ${(post.insights || []).length}</span>
-        </div>
-      </li>
-    `).join('');
-  }
-
   // ✅ [추가] 인기 기술 스택 차트 렌더링 함수
   async function renderTrendChart() {
     const techCtx = document.getElementById('home-popular-tech-chart');
@@ -185,8 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderPopularPosts();
     renderLatestNotices();
     renderImportantPosts();
-    renderLatestPosts();
-    renderLatestCaseStudies();
+    renderLatestPosts();    
     renderTrendChart(); // ✅ 차트 렌더링 함수 호출
   }
 

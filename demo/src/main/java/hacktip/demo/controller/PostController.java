@@ -1,12 +1,11 @@
 package hacktip.demo.controller;
 
-import hacktip.demo.dto.postDto.PostCreateRequestDto;
-import hacktip.demo.dto.postDto.PostResponseDto;
-import hacktip.demo.dto.postDto.PostSimpleResponseDto;
-import hacktip.demo.dto.postDto.PostUpdateRequestDto;
+import hacktip.demo.dto.postDto.*;
 import hacktip.demo.security.UserDetailsImpl;
+import hacktip.demo.service.CategoryService;
 import hacktip.demo.service.PostService;
 import jakarta.validation.Valid;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +20,21 @@ import java.util.List;
 public class PostController {
 
     private final PostService postService;
+    private final CategoryService categoryService;
+
+    //게시글 카테고리 목록 가져오기 (누구나 가능)
+    @GetMapping("categorys")
+    public ResponseEntity<CategoryResponseDto> getAllCategory(){
+        CategoryResponseDto allCategory = categoryService.findAllCategory();
+        return ResponseEntity.ok(allCategory);
+    }
+
+    // 게시글 카테고리별 조회 (누구나 가능)
+    @GetMapping("/category/{categoryName}")
+    public ResponseEntity<List<PostSimpleResponseDto>> getPostsByCategory(@PathVariable String categoryName){
+        List<PostSimpleResponseDto> posts = postService.getPostsByCategory(categoryName);
+        return ResponseEntity.ok(posts);
+    }
 
     /**
      * 1. 게시물 생성 (POST /posts)

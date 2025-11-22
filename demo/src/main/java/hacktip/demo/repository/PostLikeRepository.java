@@ -1,7 +1,7 @@
 package hacktip.demo.repository;
 
-import hacktip.demo.domain.PostLike;
-import hacktip.demo.domain.PostLikeId;
+import hacktip.demo.domain.post.PostLike;
+import hacktip.demo.domain.post.PostLikeId;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

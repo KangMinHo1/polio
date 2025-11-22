@@ -1,8 +1,8 @@
 package hacktip.demo.service;
 
 import hacktip.demo.domain.Member;
-import hacktip.demo.domain.Post;
-import hacktip.demo.domain.PostComment;
+import hacktip.demo.domain.post.Post;
+import hacktip.demo.domain.post.PostComment;
 import hacktip.demo.dto.CommentRequestDto;
 import hacktip.demo.dto.CommentResponseDto;
 import hacktip.demo.repository.MemberRepository;
@@ -46,16 +46,16 @@ public class CommentService {
     /**
      * 댓글 생성
      * @param postId 게시글 ID
-     * @param memberId 작성자 ID
+     * @param email 작성자 이메일
      * @param requestDto 댓글 내용
      * @return 생성된 댓글의 ID
      */
     @Transactional // 데이터 변경이 있으므로 쓰기 트랜잭션 적용
-    public Long createComment(Long postId, Long memberId, CommentRequestDto requestDto) {
+    public Long createComment(Long postId, String email, CommentRequestDto requestDto) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 ID의 게시글을 찾을 수 없습니다: " + postId));
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new EntityNotFoundException("해당 ID의 회원을 찾을 수 없습니다: " + memberId));
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("해당 이메일의 회원을 찾을 수 없습니다: " + email));
 
         PostComment comment = PostComment.builder()
                 .post(post)
@@ -70,15 +70,18 @@ public class CommentService {
     /**
      * 댓글 삭제
      * @param commentId 댓글 ID
-     * @param memberId 요청자 ID (삭제 권한 확인용)
+     * @param email 요청자 이메일 (삭제 권한 확인용)
      */
     @Transactional
-    public void deleteComment(Long commentId, Long memberId) throws AccessDeniedException {
+    public void deleteComment(Long commentId, String email) throws AccessDeniedException {
         PostComment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 ID의 댓글을 찾을 수 없습니다: " + commentId));
 
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("해당 이메일의 회원을 찾을 수 없습니다: " + email));
+
         // 댓글 작성자와 삭제 요청자가 동일한지 확인
-        if (!comment.getMember().getMemberId().equals(memberId)) {
+        if (!comment.getMember().getMemberId().equals(member.getMemberId())) {
             throw new AccessDeniedException("댓글을 삭제할 권한이 없습니다.");
         }
 

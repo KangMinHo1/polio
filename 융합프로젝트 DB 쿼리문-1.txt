@@ -5,11 +5,11 @@ BEGIN
     FOR t IN (
         SELECT table_name FROM user_tables 
         WHERE table_name IN (
-            -- 새로 추가된 테이블 포함
+            -- [수정] POST_CATEGORY 삭제됨, CATEGORY 포함
             'MEMBER_STACK', 'TECH_STACK',
             'POST_LIKES', 'POST_COMMENT', 'POST', 
             'CHAT_MESSAGE', 'CHATROOM_MEMBER', 
-            'CHATROOM', 'MEMBERS', 'REFRESH_TOKENS'
+            'CHATROOM', 'MEMBERS', 'REFRESH_TOKENS', 'CATEGORY'
         )
     ) LOOP
         EXECUTE IMMEDIATE 'DROP TABLE ' || t.table_name || ' CASCADE CONSTRAINTS';
@@ -55,7 +55,7 @@ END;
 /
 
 ------------------------------------------------------------
--- 1-1. TECH_STACK 테이블 (기술 스택 종류 관리) - [신규 추가]
+-- 1-1. TECH_STACK 테이블 (기술 스택 종류 관리)
 ------------------------------------------------------------
 CREATE TABLE TECH_STACK (
     StackId NUMBER PRIMARY KEY,
@@ -64,7 +64,7 @@ CREATE TABLE TECH_STACK (
 
 CREATE SEQUENCE SEQ_TECH_STACK START WITH 1 INCREMENT BY 1;
 
--- 기술 스택 초기 데이터 (선택 사항)
+-- 기술 스택 초기 데이터
 INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Java');
 INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Spring Boot');
 INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Python');
@@ -74,14 +74,13 @@ INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Ora
 COMMIT;
 
 ------------------------------------------------------------
--- 1-2. MEMBER_STACK 테이블 (회원-기술 연결 테이블) - [신규 추가]
+-- 1-2. MEMBER_STACK 테이블 (회원-기술 연결 테이블)
 ------------------------------------------------------------
 CREATE TABLE MEMBER_STACK (
-    MemberStackId NUMBER PRIMARY KEY, -- JPA를 위한 별도 PK
+    MemberStackId NUMBER PRIMARY KEY,
     MemberId NUMBER NOT NULL,
     StackId NUMBER NOT NULL,
     
-    -- 중복 등록 방지 (한 사람이 같은 기술 두 번 등록 불가)
     CONSTRAINT uq_member_stack UNIQUE (MemberId, StackId),
     
     CONSTRAINT fk_ms_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId) ON DELETE CASCADE,
@@ -90,21 +89,39 @@ CREATE TABLE MEMBER_STACK (
 
 CREATE SEQUENCE SEQ_MEMBER_STACK START WITH 1 INCREMENT BY 1;
 
+------------------------------------------------------------
+-- 2. CATEGORY 테이블 (게시판 카테고리 관리) - [순서 변경: POST보다 먼저 생성]
+------------------------------------------------------------
+CREATE TABLE CATEGORY (
+    CategoryId NUMBER PRIMARY KEY,
+    CategoryName VARCHAR2(50 CHAR) NOT NULL UNIQUE
+);
 
+CREATE SEQUENCE SEQ_CATEGORY START WITH 1 INCREMENT BY 1;
+
+-- 카테고리 초기 데이터
+INSERT INTO CATEGORY (CategoryId, CategoryName) VALUES (SEQ_CATEGORY.NEXTVAL, '질문');
+INSERT INTO CATEGORY (CategoryId, CategoryName) VALUES (SEQ_CATEGORY.NEXTVAL, '자유');
+INSERT INTO CATEGORY (CategoryId, CategoryName) VALUES (SEQ_CATEGORY.NEXTVAL, '프로젝트');
+INSERT INTO CATEGORY (CategoryId, CategoryName) VALUES (SEQ_CATEGORY.NEXTVAL, '스터디');
+COMMIT;
 
 ------------------------------------------------------------
--- 2. POST 테이블
+-- 3. POST 테이블 ([수정] CategoryId 외래키 추가)
 ------------------------------------------------------------
 CREATE TABLE POST (
     PostId NUMBER PRIMARY KEY,
     MemberId NUMBER NOT NULL,
+    CategoryId NUMBER NOT NULL, -- [추가] 1개의 카테고리만 참조
     Title VARCHAR2(200 CHAR) NOT NULL,
     Content CLOB NOT NULL,
     ViewCount NUMBER DEFAULT 0,
     CreateDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    Category VARCHAR2(50 CHAR) NOT NULL,
-    GithubUrl VARCHAR2(500 CHAR), 
-    CONSTRAINT fk_post_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId)
+    GithubUrl VARCHAR2(500 CHAR),
+    
+    CONSTRAINT fk_post_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId),
+    -- [추가] 카테고리 외래키 제약조건
+    CONSTRAINT fk_post_category FOREIGN KEY (CategoryId) REFERENCES CATEGORY(CategoryId)
 );
 
 CREATE SEQUENCE SEQ_POST START WITH 1 INCREMENT BY 1;
@@ -119,18 +136,18 @@ END;
 /
 
 ------------------------------------------------------------
--- 3. POST_LIKES 테이블
+-- 4. POST_LIKES 테이블
 ------------------------------------------------------------
 CREATE TABLE POST_LIKES (
     PostId NUMBER NOT NULL,
     MemberId NUMBER NOT NULL,
     CONSTRAINT pk_post_likes PRIMARY KEY (PostId, MemberId),
-    CONSTRAINT fk_like_post FOREIGN KEY (PostId) REFERENCES POST(PostId),
-    CONSTRAINT fk_like_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId)
+    CONSTRAINT fk_like_post FOREIGN KEY (PostId) REFERENCES POST(PostId) ON DELETE CASCADE,
+    CONSTRAINT fk_like_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId) ON DELETE CASCADE
 );
 
 ------------------------------------------------------------
--- 4. POST_COMMENT 테이블
+-- 5. POST_COMMENT 테이블
 ------------------------------------------------------------
 CREATE TABLE POST_COMMENT (
     CommentId NUMBER PRIMARY KEY,
@@ -138,8 +155,8 @@ CREATE TABLE POST_COMMENT (
     MemberId NUMBER NOT NULL,
     Contents CLOB NOT NULL,
     CreateDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_comment_post FOREIGN KEY (PostId) REFERENCES POST(PostId),
-    CONSTRAINT fk_comment_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId)
+    CONSTRAINT fk_comment_post FOREIGN KEY (PostId) REFERENCES POST(PostId) ON DELETE CASCADE,
+    CONSTRAINT fk_comment_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId) ON DELETE CASCADE
 );
 
 CREATE SEQUENCE SEQ_COMMENT START WITH 1 INCREMENT BY 1;
@@ -154,7 +171,7 @@ END;
 /
 
 ------------------------------------------------------------
--- 5. CHATROOM 테이블
+-- 6. CHATROOM 테이블
 ------------------------------------------------------------
 CREATE TABLE CHATROOM (
     RoomId NUMBER PRIMARY KEY,
@@ -174,18 +191,18 @@ END;
 /
 
 ------------------------------------------------------------
--- 6. CHATROOM_MEMBER 테이블
+-- 7. CHATROOM_MEMBER 테이블
 ------------------------------------------------------------
 CREATE TABLE CHATROOM_MEMBER (
     RoomId NUMBER NOT NULL,
     MemberId NUMBER NOT NULL,
     CONSTRAINT pk_chatroom_member PRIMARY KEY (RoomId, MemberId),
-    CONSTRAINT fk_map_room FOREIGN KEY (RoomId) REFERENCES CHATROOM(RoomId),
-    CONSTRAINT fk_map_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId)
+    CONSTRAINT fk_map_room FOREIGN KEY (RoomId) REFERENCES CHATROOM(RoomId) ON DELETE CASCADE,
+    CONSTRAINT fk_map_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId) ON DELETE CASCADE
 );
 
 ------------------------------------------------------------
--- 7. CHAT_MESSAGE 테이블
+-- 8. CHAT_MESSAGE 테이블
 ------------------------------------------------------------
 CREATE TABLE CHAT_MESSAGE (
     ChatId NUMBER PRIMARY KEY,
@@ -193,8 +210,8 @@ CREATE TABLE CHAT_MESSAGE (
     MemberId NUMBER NOT NULL,
     Content CLOB NOT NULL,
     SendDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_chat_room FOREIGN KEY (RoomId) REFERENCES CHATROOM(RoomId),
-    CONSTRAINT fk_chat_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId)
+    CONSTRAINT fk_chat_room FOREIGN KEY (RoomId) REFERENCES CHATROOM(RoomId) ON DELETE CASCADE,
+    CONSTRAINT fk_chat_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId) ON DELETE CASCADE
 );
 
 CREATE SEQUENCE SEQ_CHAT_MESSAGE START WITH 1 INCREMENT BY 1;
@@ -209,7 +226,7 @@ END;
 /
 
 ------------------------------------------------------------
--- 8. REFRESH_TOKENS 테이블
+-- 9. REFRESH_TOKENS 테이블
 ------------------------------------------------------------
 CREATE TABLE REFRESH_TOKENS (
     USER_EMAIL VARCHAR2(255) NOT NULL, 
@@ -217,4 +234,3 @@ CREATE TABLE REFRESH_TOKENS (
     CONSTRAINT PK_REFRESH_TOKENS PRIMARY KEY (USER_EMAIL)
 );
 
-PROMPT ✅ 모든 테이블(회원, 기술스택 포함), 시퀀스, 트리거가 정상 생성되었습니다.

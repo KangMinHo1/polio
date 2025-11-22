@@ -1,4 +1,4 @@
-package hacktip.demo.domain;
+package hacktip.demo.domain.post;
 
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;

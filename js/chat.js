@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const messageData = {
             content: content,
             authorId: currentUser.id,
-            authorCategory: currentUser.category,
+            authorCategory: currentUser.role, // ✅ [수정] currentUser.category -> currentUser.role
             createdAt: Date.now()
         };
 

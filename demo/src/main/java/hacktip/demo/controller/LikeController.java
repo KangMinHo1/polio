@@ -22,8 +22,8 @@ public class LikeController {
             @PathVariable Long postId,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        Long memberId = userDetails.getMember().getMemberId();
-        likeService.toggleLike(postId, memberId);
+        String email = userDetails.getMember().getEmail();
+        likeService.toggleLike(postId, email);
         return ResponseEntity.ok("좋아요 처리가 완료되었습니다.");
     }
 }

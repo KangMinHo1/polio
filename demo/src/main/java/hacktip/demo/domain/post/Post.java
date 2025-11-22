@@ -1,5 +1,6 @@
-package hacktip.demo.domain;
+package hacktip.demo.domain.post;
 
+import hacktip.demo.domain.Member;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -46,8 +47,9 @@ public class Post {
     @Column(name = "CREATEDATE", nullable = false, updatable = false)
     private Timestamp createDate;
 
-    @Column(name = "CATEGORY", length = 50)
-    private String category;
+
+    @Column(name = "GITHUBURL", length = 300)
+    private String githubUrl;
 
     // Post와 PostComment의 연관관계 (하나의 게시글은 여러 댓글을 가짐)
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -57,17 +59,22 @@ public class Post {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostLike> likes = new ArrayList<>();
 
+    // [변경] 게시글 - 카테고리 관계 (N:1)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CATEGORYID")
+    private Category category;
 
     @Builder
-    public Post(Member member, String title, String content, String category){
+    public Post(Member member, String title, String content, String githubUrl, Category category){
         this.member = member;
         this.title = title;
         this.content = content;
+        this.githubUrl = githubUrl;
         this.category = category;
     }
 
     // 게시글 수정 매서드 (서비스 로직용)
-    public void update(String title, String content, String category){
+    public void update(String title, String content, Category category){
         this.title = title;
         this.content = content;
         this.category = category;

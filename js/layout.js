@@ -6,9 +6,9 @@
 
 window.APP_INITIALIZATION = (async () => {
   await new Promise(resolve => {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', resolve);
-    } else {
+    if (document.readyState === 'loading') { //만약 로딩중이라면 
+      document.addEventListener('DOMContentLoaded', resolve); // 문서가 모두 준비되었을때 resolve 함수 실행
+    } else { //이미 로딩이 완료되었다면 resolve 함수 실행
       resolve();
     }
   });
@@ -26,6 +26,7 @@ window.APP_INITIALIZATION = (async () => {
     }
   };
 
+  //헤더 푸터 로드
   await Promise.all([
     loadPartial('header-placeholder', 'header.html'),
     loadPartial('footer-placeholder', 'footer.html')

@@ -6,8 +6,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   await window.APP_INITIALIZATION;
   const app = window.CommunityApp;
 
-  let allComments = [];
-
   const pageState = {
     currentPage: 1,
     postsPerPage: 8,
@@ -15,9 +13,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentCategory: 'all',
     likedPostIds: JSON.parse(localStorage.getItem('likedPostIds') || '[]'),
     sortBy: 'latest',
-    filterTypes: ['feedback', 'casestudy'],
-    filterStatus: ['ongoing', 'resolved', 'hired'],
-    filterTags: ['코드 구조', '디자인', 'UX/UI', '프로젝트 설명', '기술 스택', '전반적 흐름'] // 초기값: 모두 선택
+    filterTypes: ['feedback'],
+    filterStatus: [], // 상태 필터 기능 제거
   };
 
   const elements = {
@@ -28,17 +25,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     pageInfo: document.getElementById('page-info'),
     prevButton: document.getElementById('prev-page-button'),
     nextButton: document.getElementById('next-page-button'),
-    sortSelect: document.getElementById('sort-by'),
-    typeCheckboxes: document.querySelectorAll('input[name="filter-type"]'),
-    statusCheckboxes: document.querySelectorAll('input[name="filter-status"]'),
-    tagsCheckboxes: document.querySelectorAll('input[name="filter-tag"]')
+    sortSelect: document.getElementById('sort-by')
   };
 
+  /**
+   * 페이지의 모든 동적 기능을 초기화하는 메인 함수.
+   */
   async function initializePostsPage() {
-    allComments = await app.api.fetchAllComments();
-    populateCategoryFilter();
+    // ✅ [수정] 다른 비동기 작업보다 먼저 카테고리 필터 UI를 채웁니다.
+    populateCategoryFilter(); //서버에서 가져온 게시글 카테고리를 받아와서 설정
     parseUrlParameters(); // URL 파라미터가 있다면 필터 상태보다 우선 적용
-    // Initialize filter UI based on pageState before setting up listeners
     initializeFilterUI();
     setupEventListeners();
     renderAll();
@@ -52,22 +48,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     showPostFromHash();
   }
 
+  /**
+   * URL의 쿼리 파라미터(예: ?category=질문)를 분석하여 페이지의 초기 필터 상태를 설정합니다.
+   */
   function parseUrlParameters() {
     const urlParams = new URLSearchParams(window.location.search);
     pageState.currentCategory = urlParams.get('category') || 'all';
     pageState.currentSearchTerm = urlParams.get('search') || '';
     pageState.currentAuthor = urlParams.get('author') || '';
 
-    // URL 파라미터로 필터 상태 덮어쓰기 (예: ?filter-type=casestudy)
-    if (urlParams.has('filter-type')) {
-        pageState.filterTypes = urlParams.getAll('filter-type');
-    }
-    if (urlParams.has('filter-status')) {
-        pageState.filterStatus = urlParams.getAll('filter-status');
-    }
-    if (urlParams.has('filter-tag')) {
-        pageState.filterTags = urlParams.getAll('filter-tag');
-    }
     if (urlParams.has('sort')) {
         pageState.sortBy = urlParams.get('sort');
     }
@@ -77,15 +66,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 필터 UI 초기 상태 설정
+  /**
+   * 필터 UI(정렬 드롭다운 등)의 초기 상태를 현재 페이지 상태(pageState)에 맞게 설정합니다.
+   */
   function initializeFilterUI() {
       if (elements.sortSelect) elements.sortSelect.value = pageState.sortBy;
-      elements.typeCheckboxes.forEach(cb => cb.checked = pageState.filterTypes.includes(cb.value));
-      elements.statusCheckboxes.forEach(cb => cb.checked = pageState.filterStatus.includes(cb.value));
-      elements.tagsCheckboxes.forEach(cb => cb.checked = pageState.filterTags.includes(cb.value));
   }
 
-  // 모든 필터/정렬에 대한 이벤트 리스너 추가
+  /**
+   * 카테고리 필터, 정렬 드롭다운, 페이지네이션 버튼 등
+   * 사용자와 상호작용하는 모든 요소에 이벤트 리스너를 설정합니다.
+   */
   function setupEventListeners() {
     if (elements.categoryFilter)
       elements.categoryFilter.addEventListener('change', (e) => {
@@ -101,33 +92,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderAll(); updateUrl();
       });
 
-    elements.typeCheckboxes.forEach(checkbox => {
-      checkbox.addEventListener('change', () => {
-        pageState.filterTypes = Array.from(elements.typeCheckboxes)
-          .filter(cb => cb.checked).map(cb => cb.value);
-        pageState.currentPage = 1;
-        renderAll(); updateUrl();
-      });
-    });
-
-    elements.statusCheckboxes.forEach(checkbox => {
-      checkbox.addEventListener('change', () => {
-        pageState.filterStatus = Array.from(elements.statusCheckboxes)
-          .filter(cb => cb.checked).map(cb => cb.value);
-        pageState.currentPage = 1;
-        renderAll(); updateUrl();
-      });
-    });
-
-    elements.tagsCheckboxes.forEach(checkbox => {
-      checkbox.addEventListener('change', () => {
-          pageState.filterTags = Array.from(elements.tagsCheckboxes)
-            .filter(cb => cb.checked).map(cb => cb.value);
-          pageState.currentPage = 1;
-          renderAll(); updateUrl();
-      });
-    });
-
     if (elements.prevButton) elements.prevButton.addEventListener('click', () => changePage(-1));
     if (elements.nextButton) elements.nextButton.addEventListener('click', () => changePage(1));
     if (elements.postList) {
@@ -141,14 +105,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // URL 업데이트 함수
+  /**
+   * 현재 필터 및 정렬 상태를 브라우저 URL의 쿼리 파라미터에 반영합니다.
+   * 이를 통해 사용자는 필터링된 페이지를 북마크하거나 공유할 수 있습니다.
+   */
   function updateUrl() {
       const params = new URLSearchParams();
       if (pageState.currentCategory !== 'all') params.set('category', pageState.currentCategory);
       if (pageState.sortBy !== 'latest') params.set('sort', pageState.sortBy);
-      pageState.filterTypes.forEach(type => params.append('filter-type', type));
-      pageState.filterStatus.forEach(status => params.append('filter-status', status));
-      pageState.filterTags.forEach(tag => params.append('filter-tag', tag));
       // Add other params like search term if needed
 
       // Only push state if params changed (simple check)
@@ -159,6 +123,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
 
+  /**
+   * 게시글 작성자 이름을 클릭했을 때 해당 사용자의 프로필 페이지로 이동시킵니다.
+   */
   function handleAuthorClick(e) {
     const authorId = e.target.dataset.authorId;
     if (!authorId) return;
@@ -174,74 +141,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function handleUpvoteClick(post, commentIdStr) { /* ... (이전과 동일) ... */ }
   async function handleSelectBestClick(post, commentIdStr) { /* ... (이전과 동일) ... */ }
   async function handleMarkAsResolved(postId) { /* ... (이전과 동일) ... */ }
-
+  
+  /**
+   * 게시글 목록과 페이지네이션을 다시 렌더링하는 마스터 함수.
+   */
   function renderAll() {
     updateFilteredPosts();
     renderPostList();
     renderPagination();
   }
 
-  // 필터링 및 정렬 로직
+  /**
+   * 전역 상태(app.state.posts)의 게시글 목록을 현재 필터(카테고리, 검색어)와 정렬 순서에 맞게 가공하여 pageState.filteredPosts에 저장합니다.
+   */
   function updateFilteredPosts() {
     const term = (pageState.currentSearchTerm || '').toLowerCase();
 
     const filtered = app.state.posts.filter((post) => {
       const categoryMatch = pageState.currentCategory === 'all' || post.category === pageState.currentCategory;
 
-      let contentSearchMatch = false;
-      let feedbackTags = []; // 게시글의 태그
-
-      if (post.postType === 'feedback') {
-          try {
-              const data = JSON.parse(post.content);
-              const projectText = (data.projects || []).map(p => `${p.title} ${p.techStack} ${p.desc}`).join(' ');
-              const questionText = data.questions || '';
-              contentSearchMatch = (projectText + ' ' + questionText).toLowerCase().includes(term);
-              feedbackTags = data.feedbackTags || [];
-          } catch (e) {
-              contentSearchMatch = (post.content || '').toLowerCase().includes(term);
-          }
-      } else {
-          contentSearchMatch = (post.content || '').toLowerCase().includes(term);
-      }
+      const contentSearchMatch = (post.content || '').toLowerCase().includes(term);
       const searchTermMatch = !term || post.title.toLowerCase().includes(term) || contentSearchMatch;
 
       const authorMatch = !pageState.currentAuthor || post.author === pageState.currentAuthor;
-      const postType = post.postType || 'feedback';
-      const typeMatch = pageState.filterTypes.includes(postType);
+      const typeMatch = true; 
 
-      let statusMatch = false;
-      if (pageState.filterStatus.length === 0 || pageState.filterStatus.length === elements.statusCheckboxes.length) {
-          statusMatch = true; // 아무것도 선택 안 하거나 모두 선택하면 통과
-      } else {
-          statusMatch = pageState.filterStatus.some(status => {
-              if (status === 'ongoing') return !post.isResolved && !post.isHiredSuccess;
-              if (status === 'resolved') return post.isResolved && !post.isHiredSuccess;
-              if (status === 'hired') return post.isHiredSuccess;
-              return false;
-          });
-      }
+      const statusMatch = true; 
+      const tagMatch = true; 
 
-      // 태그 필터 로직
-      let tagMatch = false;
-      if (postType !== 'feedback') {
-          tagMatch = true; // 피드백 요청 글이 아니면 태그 필터 무시
-      } else if (pageState.filterTags.length === 0) {
-          tagMatch = false; // 태그 필터를 모두 껐으면 피드백 요청 글은 보이지 않음
-      } else if (pageState.filterTags.length === elements.tagsCheckboxes.length) {
-          tagMatch = true; // 모든 태그가 켜져있으면 모두 통과
-      } else {
-          // 선택된 태그 중 하나라도 포함하는지 확인
-          tagMatch = pageState.filterTags.some(tag => feedbackTags.includes(tag));
-      }
-
-      return categoryMatch && searchTermMatch && authorMatch && typeMatch && statusMatch && tagMatch;
+      return categoryMatch && searchTermMatch && authorMatch && typeMatch && statusMatch;
     });
 
+    
+    // 이렇게 해야 'category'와 'categories' 속성이 다음 로직으로 전달됩니다.
     const enhancedPosts = filtered.map(post => {
-        const commentCount = allComments.filter(c => c.postId === post.id).length;
+        // ✅ [추가] 게시글 작성자의 역할(role) 정보를 전역 사용자 목록에서 찾아 추가합니다.
+        const authorInfo = app.state.users.find(u => u.name === post.author);
+        const authorCategory = authorInfo ? authorInfo.role : '사용자';
         const popularity = (post.likes || 0) + (post.insights || []).length;
-        return { ...post, commentCount, popularity };
+        return { ...post, authorCategory, popularity };
     });
 
     enhancedPosts.sort((a, b) => {
@@ -257,6 +195,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     pageState.filteredPosts = enhancedPosts;
   }
 
+  /**
+   * 필터링 및 정렬된 게시글 목록(pageState.filteredPosts)을 현재 페이지에 맞게 잘라내어 화면에 렌더링합니다.
+   */
   function renderPostList() {
     const { currentPage, postsPerPage, filteredPosts } = pageState;
     const totalPages = Math.max(1, Math.ceil(filteredPosts.length / postsPerPage));
@@ -272,29 +213,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 목록에 요청 태그 표시
+  /**
+   * 단일 게시글 객체를 받아 목록에 표시될 HTML 문자열을 생성하여 반환합니다.
+   */
   function createPostItemHTML(post) {
       const authorCategory = post.authorCategory || '사용자';
-      let tag = '';
-      if (post.postType === 'casestudy') { tag = '<span style="font-size: 0.8rem; color: var(--color-highlight); margin-right: 0.25rem;">[💡 스터디]</span>'; }
-      else if (post.isHiredSuccess) { tag = '<span style="font-size: 0.8rem; color: #D97706; margin-right: 0.25rem;">[🎉 성공]</span>'; }
-      else if (post.isResolved) { tag = '<span style="font-size: 0.8rem; color: #16A34A; margin-right: 0.25rem;">[해결]</span>'; }
-      const reactionHTML = (post.postType === 'casestudy') ? `💡 ${(post.insights || []).length}` : `❤️ ${post.likes || 0}`;
+      const tag = ''; // 케이스 스터디 태그 제거
+      const reactionHTML = `❤️ ${post.likes || 0}`;
 
-      // 목록에 표시할 태그 렌더링
-      let tagsHTML = '';
-      if (post.postType === 'feedback') {
-          try {
-              const data = JSON.parse(post.content);
-              if (data.feedbackTags && data.feedbackTags.length > 0) {
-                  tagsHTML = `<div class="post-tags" style="margin-top: 0.5rem; justify-content: flex-start;">` +
-                      data.feedbackTags.slice(0, 2).map(tag => `<span class="post-tag">#${tag}</span>`).join('') +
-                  (data.feedbackTags.length > 2 ? ` <span class="post-tag" style="background: none; padding-left: 0;">...</span>` : '') +
-                  `</div>`;
-              }
-          } catch (e) { /* 파싱 실패 시 태그 없음 */ }
-      }
-
+      // ✅ [수정] 태그 표시 로직을 제거합니다.
       return `
         <li class="post-item" data-post-id="${post.id}">
           <div class="post-item-title">${tag}[${post.category}] ${post.title}</div>
@@ -303,21 +230,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span>${app.utils.formatDate(post.createdAt)}</span> •
             <span>조회 ${post.views || 0}</span> •
             <span>${reactionHTML}</span> •
-            <span>💬 ${post.commentCount}</span>
+            <span>💬 ${post.commentCount || 0}</span>
           </div>
-          ${tagsHTML} </li>
+           </li>
       `;
   }
 
+  /**
+   * (현재 사용되지 않음) 특정 게시글의 정보가 변경되었을 때, 전체 목록을 다시 렌더링하지 않고 해당 항목만 업데이트합니다.
+   */
   function updatePostItemInList(post) {
       const item = document.querySelector(`.post-item[data-post-id="${post.id}"]`);
       if(item) {
           const viewsEl = item.querySelector('.post-item-meta span:nth-child(3)');
           const reactionEl = item.querySelector('.post-item-meta span:nth-child(4)');
-          const commentEl = item.querySelector('.post-item-meta span:nth-child(5)');
+          const commentEl = item.querySelector('.post-item-meta span:nth-child(5)');          
           if(viewsEl) viewsEl.textContent = `조회 ${post.views || 0}`;
-          if(reactionEl && post.postType === 'casestudy') reactionEl.textContent = `💡 ${(post.insights || []).length}`;
-          else if(reactionEl) reactionEl.textContent = `❤️ ${post.likes || 0}`;
+          if(reactionEl) reactionEl.textContent = `❤️ ${post.likes || 0}`;
           if (commentEl && typeof post.commentCount !== 'undefined') {
               commentEl.textContent = `💬 ${post.commentCount}`;
           }
@@ -325,6 +254,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
   }
 
+  /**
+   * 현재 페이지 번호와 전체 페이지 수를 계산하여 페이지네이션 UI(버튼 활성화 등)를 업데이트합니다.
+   */
   function renderPagination() {
     const { currentPage, postsPerPage, filteredPosts } = pageState;
     const totalPages = Math.max(1, Math.ceil(filteredPosts.length / postsPerPage));
@@ -335,20 +267,40 @@ document.addEventListener('DOMContentLoaded', async () => {
       elements.nextButton.disabled = currentPage >= totalPages;
   }
 
+  /**
+   * '이전' 또는 '다음' 버튼 클릭 시 현재 페이지 번호를 변경하고 목록을 다시 렌더링합니다.
+   */
   function changePage(direction) {
     pageState.currentPage += direction;
     renderAll();
   }
 
+  /**
+   * 서버에서 가져온 카테고리 목록(app.state.categories)을 사용하여 카테고리 필터 드롭다운 메뉴를 동적으로 채웁니다.
+   */
   function populateCategoryFilter() {
     if (!elements.categoryFilter) return;
     while (elements.categoryFilter.options.length > 1) {
         elements.categoryFilter.remove(1);
     }
-    app.state.techStack.forEach((category) => {
+    (app.state.categories || []).forEach((category) => {
       elements.categoryFilter.add(new Option(category, category));
     });
+    // 관리자 여부와 상관없이 모든 사용자가 '공지' 카테고리를 볼 수 있도록 수정합니다.
+    // 서버에서 받은 카테고리 목록에 '공지'가 없을 경우에만 추가합니다.
+    if (!app.state.categories.includes('공지')) {
+        const noticeOption = new Option('공지', '공지');
+        // '전체' 옵션 바로 다음에 '공지'를 추가합니다.
+        elements.categoryFilter.add(noticeOption, 1); 
+    }
   }
 
-  initializePostsPage();
+  // 데이터 로딩 경쟁 상태를 방지하기 위해 write.js와 동일한 방식으로 초기화합니다.
+  // 데이터 로딩이 이 스크립트 실행보다 먼저 끝났을 경우를 대비하여, 이미 데이터가 있는지 확인합니다.
+  if (app.state.categories && app.state.categories.length > 0) {
+    initializePostsPage();
+  } else {
+    // 아직 데이터가 없다면, 데이터 로딩 완료 이벤트를 기다립니다.
+    document.addEventListener('app-data-loaded', initializePostsPage, { once: true });
+  }
 });

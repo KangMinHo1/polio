@@ -1,6 +1,6 @@
 package hacktip.demo.repository;
 
-import hacktip.demo.domain.PostComment;
+import hacktip.demo.domain.post.PostComment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

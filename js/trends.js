@@ -52,25 +52,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // 3. Success Portfolio Stats
-        const successCategoryCtx = document.getElementById('success-category-chart')?.getContext('2d');
-        if (successCategoryCtx) {
-            new Chart(successCategoryCtx, {
-                type: 'bar',
-                data: {
-                    labels: trendsData.successPortfolioStats.categories.map(item => item.key),
-                    datasets: [{
-                        label: `성공 사례 (${trendsData.successPortfolioStats.count}건)`,
-                        data: trendsData.successPortfolioStats.categories.map(item => item.value),
-                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
         // 4. Top Mentor Categories
         const topMentorCtx = document.getElementById('top-mentor-category-chart')?.getContext('2d');
         if (topMentorCtx) {
