@@ -17,6 +17,8 @@ public class PostSimpleResponseDto {
     private Timestamp createDate;
     private String category;
     private int commentCount;
+    private int likesCount;
+
 
     /**
      * 목록 조회용 DTO 변환 생성자
@@ -29,5 +31,7 @@ public class PostSimpleResponseDto {
         this.createDate = post.getCreateDate();
         this.category = post.getCategory().getCategoryName();
         this.commentCount = post.getComments().size();
+        this.likesCount = post.getLikesCount();
+
     }
 }

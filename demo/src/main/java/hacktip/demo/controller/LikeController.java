@@ -1,5 +1,6 @@
 package hacktip.demo.controller;
 
+import hacktip.demo.dto.postDto.LikeResponseDto;
 import hacktip.demo.security.UserDetailsImpl;
 import hacktip.demo.service.LikeService;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +19,12 @@ public class LikeController {
     private final LikeService likeService;
 
     @PostMapping
-    public ResponseEntity<String> toggleLike(
+    public ResponseEntity<LikeResponseDto> toggleLike(
             @PathVariable Long postId,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         String email = userDetails.getMember().getEmail();
-        likeService.toggleLike(postId, email);
-        return ResponseEntity.ok("좋아요 처리가 완료되었습니다.");
+        int updatedLikes = likeService.toggleLike(postId, email);
+        return ResponseEntity.ok(new LikeResponseDto(updatedLikes));
     }
 }

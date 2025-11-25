@@ -10,11 +10,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentPage: 1,
     postsPerPage: 8,
     filteredPosts: [],
-    currentCategory: 'all',
-    likedPostIds: JSON.parse(localStorage.getItem('likedPostIds') || '[]'),
+    currentCategory: 'all',    
+    // ✅ [수정] 사용자별 '좋아요' 목록을 가져오도록 수정합니다. 로그인하지 않았으면 빈 배열을 사용합니다.
+    likedPostIds: app.state.user ? JSON.parse(localStorage.getItem(`likedPostIds_${app.state.user.name}`) || '[]') : [],
     sortBy: 'latest',
-    filterTypes: ['feedback'],
-    filterStatus: [], // 상태 필터 기능 제거
   };
 
   const elements = {
@@ -163,13 +162,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const contentSearchMatch = (post.content || '').toLowerCase().includes(term);
       const searchTermMatch = !term || post.title.toLowerCase().includes(term) || contentSearchMatch;
 
-      const authorMatch = !pageState.currentAuthor || post.author === pageState.currentAuthor;
-      const typeMatch = true; 
+      const authorMatch = !pageState.currentAuthor || post.author === pageState.currentAuthor; 
 
-      const statusMatch = true; 
       const tagMatch = true; 
 
-      return categoryMatch && searchTermMatch && authorMatch && typeMatch && statusMatch;
+      return categoryMatch && searchTermMatch && authorMatch;
     });
 
     

@@ -42,7 +42,7 @@ public class MemberService {
     @Transactional
     public MemberSignUpResponseDto signUp(MemberSignUpRequestDto request){
         String encodedPassword = passwordEncoder.encode(request.getPassword()); //비밀번호 암호화
-
+        
 
         //이메일 중복 검사
         if(memberRepository.existsByEmail(request.getEmail())){

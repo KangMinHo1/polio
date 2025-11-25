@@ -77,14 +77,14 @@ public class SecurityConfig {
     // 2. (추가) CORS 설정을 위한 Bean 등록
     /**
      * CORS (Cross-Origin Resource Sharing) 설정을 정의하는 Bean.
-     * 프론트엔드(localhost:5050)からの 요청을 허용합니다.
+     * 프론트엔드(localhost:5050)요청을 허용.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 1. 허용할 출처(Origin) 설정
-        configuration.setAllowedOrigins(Arrays.asList("http://192.168.219.104:5500", "http://localhost:5500"));
+        configuration.setAllowedOrigins(Arrays.asList("http://192.168.219.103:5500", "http://localhost:5500"));
         // 2. 허용할 HTTP 메서드 설정 ("*": 모든 메서드 허용)
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"));
         // 3. 허용할 HTTP 헤더 설정 ("*": 모든 헤더 허용)

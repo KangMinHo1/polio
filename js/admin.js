@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return `
       <li class="list-item">
         <div class="item-info">
-          <div class="item-title">${user.name} (${user.email})${mentorBadge}</div>
+          <div class="item-title">${user.name}${mentorBadge}</div>
         </div>
         <div class="item-actions">
           {/* ✅ [수정] 여러 개의 select를 하나로 통합하고, 백엔드 Role Enum과 직접 매핑합니다. */}

@@ -41,7 +41,7 @@ public class Member {
     @Column(name = "ROLE", nullable = false)
     private Role role;
 
-    // [추가] 회원이 가진 기술 스택 목록 (양방향 매핑)
+
     // cascade = ALL: 회원이 삭제되면 연결된 기술 스택 정보도 같이 삭제됨 (DB의 ON DELETE CASCADE와 맞춤)
     // orphanRemoval = true: 리스트에서 제거하면 DB에서도 삭제됨
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)

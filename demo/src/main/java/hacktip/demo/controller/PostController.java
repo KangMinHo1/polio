@@ -101,4 +101,5 @@ public class PostController {
         return ResponseEntity.ok("게시물이 삭제되었습니다.");
     }
 
+
 }

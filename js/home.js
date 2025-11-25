@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const postList = document.getElementById('home-post-list');
     if (!postList) return;
     const latestPosts = app.state.posts
-        .filter(post => post.categories && !post.categories.includes('공지') && post.postType === 'feedback')
+        .filter(post => post.categories && !post.categories.includes('공지'))
         .sort((a, b) => b.createdAt - a.createdAt)
         .slice(0, 5);
     if (latestPosts.length === 0) {

@@ -11,10 +11,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.Cookie; // 2. Cookie 임포트
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -71,14 +74,7 @@ public class MemberController {
         return ResponseEntity.ok(responseDto);
     }
 
-    //자신의 기술스택 정보 요청
-    @GetMapping("/members/me/stacks")
-    public ResponseEntity<ResponseUserDataDto> getMyTechStacks(@AuthenticationPrincipal UserDetailsImpl userDetails){
-        // 서비스 계층에 UserDetails를 전달하여 사용자 정보를 조회합니다.
-        // responseDto = memberService.getMemberTechStacks(userDetails);
-        //return ResponseEntity.ok();
-        return null;
-    }
+
 
     // 6. === [쿠키 만료 헬퍼 메서드 추가] ===
     /**

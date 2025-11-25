@@ -84,4 +84,9 @@ public class Post {
     public void increaseViewCount(){
         this.viewCount++;
     }
+
+    // 좋아요 수 반환 매서드
+    public int getLikesCount() {
+        return likes.size();
+    }
 }

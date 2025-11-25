@@ -37,12 +37,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     //수정 요청일떄만 실행
     if (editPostIdParam) {
         const postId = parseInt(editPostIdParam, 10);
-        editPostData = app.state.posts.find(p => p.id === postId); //전체 게시글에 수정하려는 postId가 있으면 해당 게시글 정보 담기
+        
+        try {
+            // ✅ [수정] app.state.posts 대신, 서버에 직접 게시글의 전체 상세 정보를 요청합니다.
+            editPostData = await app.api.fetchPostById(postId);
+        } catch (error) {
+            app.utils.showNotification('게시글 정보를 불러오는 데 실패했습니다.', 'danger');
+            return;
+        }
         
         if (editPostData) { //게시글 작성 본인, 관리자가 아니면 수정 불가
             if (editPostData.author !== currentUser.name && currentUser.role !== '관리자') {
                 app.utils.showNotification('수정 권한이 없습니다.', 'danger');
-                setTimeout(() => { window.location.href = `posts.html#post-${postId}`; }, 1500);
+                setTimeout(() => { window.location.href = `post-detail.html?id=${postId}`; }, 1500);
                 return;
             }
             isEditMode = true;
@@ -88,21 +95,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         elements.postId.value = editPostData.id;
         // ✅ [수정] editPostData.categories 배열 대신, 단일 문자열인 editPostData.category를 사용합니다.
-        elements.category.value = editPostData.category || '';
+        elements.category.value = editPostData.category;
         elements.title.value = editPostData.title;
-        elements.portfolioLink.value = editPostData.portfolioLink || '';
+        elements.portfolioLink.value = editPostData.githubUrl || ''; // ✅ [수정] githubUrl 필드를 사용합니다.
         elements.importantCheckbox.checked = editPostData.isImportant;
-        
-        // 수정 모드에서는 항상 피드백 요청 유형으로 간주합니다.
-        const postType = 'feedback';
-        if (postType === 'feedback') {            
-            try {
-                const data = JSON.parse(editPostData.content);
-                elements.feedbackQuestions.value = data.questions || '';
-            } catch (e) {
-                elements.feedbackQuestions.value = editPostData.content;
-            }
-        }
+        elements.feedbackQuestions.value = editPostData.content; // ✅ [수정] content 필드를 직접 사용합니다.
     }
 
     //사용자가 '피드백 요청'이나 '수정 완료' 버튼을 눌러 폼을 제출할 때  페이지를 새로고침하지 않고 서버에 데이터를 비동기적으로 전송하는 기능
@@ -113,14 +110,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function handleFormSubmit(e) { 
         e.preventDefault(); 
         const submitButton = e.target.querySelector('button[type="submit"]');
-        submitButton.disabled = true;
-
-        // ✅ [수정] 케이스 스터디 기능이 없으므로 항상 'feedback' 유형으로 고정합니다.
-        const selectedPostType = 'feedback';
+        submitButton.disabled = true;        
         
         let contentData;
         let isContentValid = false;
-        
+
         // ✅ [수정] contentData에 JSON 구조 대신 textarea의 텍스트 값을 직접 저장합니다.
         contentData = elements.feedbackQuestions.value.trim();
         isContentValid = !!contentData;
@@ -132,8 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // ✅ [수정] 프론트엔드의 portfolioLink를 백엔드 DTO의 githubUrl 필드명과 일치시킵니다.
             githubUrl: elements.portfolioLink.value.trim() || null,
             isImportant: (currentUser.role === '관리자') ? elements.importantCheckbox.checked : (isEditMode ? editPostData.isImportant : false),
-            file: isEditMode ? editPostData.file : null, // 파일 관련 로직 제거
-            postType: selectedPostType
+            file: isEditMode ? editPostData.file : null // 파일 관련 로직 제거
         };
 
         if (!postData.title || !isContentValid) {

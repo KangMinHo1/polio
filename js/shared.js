@@ -6,7 +6,10 @@ window.CommunityApp = { // ◀ 최상위 객체
   //데이터를 저장하는 '객체' ==> 임시저장소 페이지를 이동하면 초기화 됌
   state: {
     posts: [], // 전체 게시글 목록
-    users: [], //관리자가 전체 사용자를 확인하는 용도의 저장소
+    // ✅ [역할 변경] 앱 전역에서 사용될 모든 사용자의 기본 정보(id, name, role 등)를 담는 캐시.
+    // - 관리자 페이지: 사용자 관리 목록으로 사용.
+    // - 게시글/프로필 페이지: 작성자의 역할(role) 등 부가 정보를 표시하는 데 사용.
+    users: [],
     categories: [], //게시글의 카테고리 목록 (서버에서 받아와 채워짐)
     user: null, //로그인한 사용자의 정보           localStorage  
     isDarkMode: false,                           //localStorage
@@ -125,7 +128,9 @@ window.CommunityApp = { // ◀ 최상위 객체
     async fetchPostById(postId) { // ✅ [추가] 단일 게시물 조회
       return this.request(`/api/posts/${postId}`);
     },
-    async fetchAllUsers() { // ✅ [추가] 모든 사용자 목록 조회
+    // ✅ [수정] 백엔드에서 List<ResponseUserDataDto>를 반환합니다.
+    // ResponseUserDataDto: { id, name, role, memberStack }
+    async fetchAllUsers() {
       return this.request('/api/admin/users');
     },
     async createPost(postData) {
@@ -175,11 +180,17 @@ window.CommunityApp = { // ◀ 최상위 객체
     async fetchComments(postId) {
       return this.request(`/api/posts/${postId}/comments`);
     },
-    async createComment(commentData) {
-       return this.request(`/api/posts/${commentData.postId}/comments`, { method: 'POST', body: JSON.stringify(commentData) });
+    async createComment(postId, commentData) { // ✅ [수정] postId를 별도 인자로 받습니다.
+       // ✅ [수정] 댓글 생성 API는 JSON이 아닌 텍스트를 반환하므로, request 함수를 직접 사용하지 않고 fetch를 사용합니다.
+       const response = await fetch(`${this.BASE_URL}/api/posts/${postId}/comments`, { method: 'POST', headers: this.getAuthHeaders(), body: JSON.stringify(commentData) });
+       if (!response.ok) { throw new Error('댓글 생성에 실패했습니다.'); }
+       return null; // 성공 시 null 반환
     },
     async deleteComment(commentId) {
-        return this.request(`/api/comments/${commentId}`, { method: 'DELETE' });
+        // ✅ [수정] 댓글 삭제 API는 텍스트를 반환하므로, JSON 파싱을 시도하지 않도록 fetch를 직접 사용합니다.
+        const response = await fetch(`${this.BASE_URL}/api/comments/${commentId}`, { method: 'DELETE', headers: this.getAuthHeaders() });
+        if (!response.ok) { throw new Error('댓글 삭제에 실패했습니다.'); }
+        return null; // 성공 시 null 반환
     },
     async fetchChatMessages() {
       // 실제 채팅방 목록 조회 후 roomId를 동적으로 가져와야 합니다.
@@ -321,11 +332,13 @@ window.CommunityApp = { // ◀ 최상위 객체
     try {
       // 게시글 전체 목록을 불러와 app.state.posts에 저장합니다.
       const posts = await this.api.fetchPosts();
-      // ✅ [수정] 백엔드 DTO의 category가 이미 문자열이므로, 불필요한 가공 로직을 제거합니다.
-      // createDate를 프론트엔드에서 사용하는 createdAt으로만 변경합니다.
+      // ✅ [수정] 백엔드 DTO 필드명을 프론트엔드에서 사용하는 필드명으로 변환합니다.
+      // - createDate -> createdAt
+      // - likesCount -> likes
       this.state.posts = posts.map(post => ({
         ...post,
-        createdAt: post.createDate
+        createdAt: post.createDate,
+        likes: post.likesCount 
       }));
     } catch(e) {
       console.error("Failed to load posts", e);
@@ -335,7 +348,17 @@ window.CommunityApp = { // ◀ 최상위 객체
     // ✅ [추가] 관리자 또는 프로필 페이지에서 사용하기 위해 모든 사용자 정보를 미리 불러옵니다.
     try {
       // 이 API는 관리자 권한이 필요할 수 있으므로, 실패하더라도 앱 실행에 영향을 주지 않도록 처리합니다.
-      this.state.users = await this.api.fetchAllUsers();
+      const usersFromServer = await this.api.fetchAllUsers();
+      // ✅ [수정] 백엔드에서 @JsonValue를 통해 이미 한글 역할명(e.g., "취준생")을 반환하므로,
+      // 불필요한 switch 변환 로직을 제거하고 받은 값을 그대로 사용합니다.
+      this.state.users = usersFromServer.map(user => {
+        return {
+          id: user.id,
+          name: user.name,
+          role: user.role || '사용자', // 서버에서 받은 값을 그대로 사용
+          memberStack: user.memberStack || []
+        };
+      });
     } catch (e) {
       console.warn("Failed to load all users. This might be due to permissions.", e.message);
       this.state.users = [];

@@ -10,18 +10,16 @@ function renderUserPosts(userPosts, currentUser, profileUser) {
     if (userPosts.length === 0) {
         postsList.innerHTML = '<li>작성한 글이 없습니다.</li>';
     } else {
-        postsList.innerHTML = userPosts.map(post => {            let actionButtonHTML = '';
-            let tag = '';
-            if (post.postType === 'casestudy') { tag = '<span style="color: var(--color-highlight);">[💡 스터디]</span>'; }
-
+        postsList.innerHTML = userPosts.map(post => {            
+            let actionButtonHTML = '';
             return `
               <li class="profile-list-item">
                 <a href="posts.html#post-${post.id}" style="text-decoration:none; color: inherit;">
-                  <div class="post-item-title">${tag} [${post.category}] ${post.title}</div>
+                  <div class="post-item-title">[${post.category}] ${post.title}</div>
                   <div class="post-item-meta">
                     <span>${window.CommunityApp.utils.formatDate(post.createdAt)}</span> •
                     <span>조회 ${post.views || 0}</span> •
-                    <span>${post.postType === 'casestudy' ? `💡 ${(post.insights || []).length}` : `❤️ ${post.likes || 0}`}</span>
+                    <span>❤️ ${post.likes || 0}</span>
                   </div>
                 </a>
                 ${actionButtonHTML}
@@ -41,7 +39,6 @@ function renderUserComments(userComments, allPosts) {
             .map(comment => {
                 const originalPost = allPosts.find(p => p.id === comment.postId);
                 const postTitle = originalPost ? originalPost.title : '삭제된 게시글';
-                const postType = originalPost ? (originalPost.postType || 'feedback') : 'feedback';
                 const shortComment = comment.content.length > 100 ? comment.content.substring(0, 100) + '...' : comment.content;
                 let statsHTML = ` • 👍 ${(comment.upvotes || []).length}`;
                 return `
@@ -78,13 +75,10 @@ function renderBookmarks(allPosts, currentUser, profileUser) {
     if (bookmarkedPosts.length === 0) {
         bookmarksList.innerHTML = '<li>스크랩한 글이 없습니다.</li>';
     } else {
-        bookmarksList.innerHTML = bookmarkedPosts.map(post => {
-            let tag = '';
-            if (post.postType === 'casestudy') { tag = '<span style="color: var(--color-highlight);">[💡 스터디]</span>'; }
-            
+        bookmarksList.innerHTML = bookmarkedPosts.map(post => {            
             return `
               <li class="profile-list-item" onclick="location.href='posts.html#post-${post.id}'" style="cursor: pointer;">
-                <div class="post-item-title">${tag} [${post.category}] ${post.title}</div>
+                <div class="post-item-title">[${post.category}] ${post.title}</div>
                 <div class="post-item-meta">
                   <span>스크랩한 글</span> •
                   <span>작성자: ${post.author}</span>
@@ -235,12 +229,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- 기술 스택 렌더링 ---
         // 프로필 주인의 기술 스택을 가져와서 표시합니다.
         try {
-            let stacks = [];
-            // ✅ [수정] 자신의 프로필을 볼 때만 기술 스택을 가져옵니다.
-            // 다른 사용자의 스택을 가져오는 API는 백엔드 구현이 필요합니다.
-            if (currentUser && currentUser.name === profileUser.name) {
-                stacks = await app.api.getMyStacks();
-            }
+            // ✅ [개선] shared.js에 추가된 API를 사용하여 모든 사용자의 기술 스택을 가져옵니다.
+            const stacks = await app.api.getStacksByUserName(profileUser.name);
             renderTechStacks(stacks);
         } catch (error) {
             console.error("Failed to fetch tech stacks:", error);

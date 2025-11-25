@@ -21,6 +21,14 @@ document.addEventListener('DOMContentLoaded', async () => { //함수 실행을 �
 
       try {
         const user = await app.api.loginUser(email, password); //서버에 로그인 요청하기
+
+        // ✅ [수정] 로그인 성공 시, 현재 사용자에 맞는 '좋아요' 목록을 다시 불러와 pageState를 갱신합니다.
+        // 이 코드는 posts.js가 로드된 페이지(예: posts.html)에서 로그인 팝업을 통해 로그인했을 때를 위한 것입니다.
+        if (window.pageState && window.pageState.hasOwnProperty('likedPostIds')) {
+          const userLikedPostIds = JSON.parse(localStorage.getItem(`likedPostIds_${user.name}`) || '[]');
+          window.pageState.likedPostIds = userLikedPostIds;
+        }
+
         app.utils.showNotification(`(${user.role}) ${user.name}님, 환영합니다!`, 'success'); // 로그인 성공 알림 표시
         setTimeout(() => { window.location.href = 'mainview.html'; }, 1000); //1초 후 메인 화면 이동
       } catch (error) {

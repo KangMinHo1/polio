@@ -22,7 +22,7 @@ public class LikeService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public void toggleLike(Long postId, String email) {
+    public int toggleLike(Long postId, String email) {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("해당 이메일의 회원을 찾을 수 없습니다: " + email));
 
@@ -44,5 +44,7 @@ public class LikeService {
 
             likeRepository.save(newLike);
         }
+        // 4. 업데이트된 좋아요 수 반환
+        return likeRepository.countByPost_PostId(postId);
     }
 }

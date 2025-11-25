@@ -15,6 +15,7 @@ public class PostResponseDto {
     private String content;
     private String author;
     private int views;
+    private int likesCount;
     private Timestamp createDate;
     private String category;
     private String githubUrl;
@@ -33,6 +34,7 @@ public class PostResponseDto {
         this.createDate = post.getCreateDate();;
         this.githubUrl = post.getGithubUrl();
         this.category = post.getCategory().getCategoryName();
+        this.likesCount = post.getLikesCount();
     }
 
 }
