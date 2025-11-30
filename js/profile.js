@@ -1,10 +1,3 @@
-/**
- * profile.js
- * Handles the dynamic rendering of the user profile page.
- */
-
-// --- 헬퍼 함수 ---
-
 function renderUserPosts(userPosts, currentUser, profileUser) {
     const postsList = document.getElementById('profile-posts-list');
     if (userPosts.length === 0) {
@@ -13,8 +6,8 @@ function renderUserPosts(userPosts, currentUser, profileUser) {
         postsList.innerHTML = userPosts.map(post => {            
             let actionButtonHTML = '';
             return `
-              <li class="profile-list-item">
-                <a href="posts.html#post-${post.id}" style="text-decoration:none; color: inherit;">
+              <li class="profile-list-item" style="cursor: pointer;" onclick="location.href='post-detail.html?id=${post.id}'">
+                <a href="post-detail.html?id=${post.id}" style="text-decoration:none; color: inherit;">
                   <div class="post-item-title">[${post.category}] ${post.title}</div>
                   <div class="post-item-meta">
                     <span>${window.CommunityApp.utils.formatDate(post.createdAt)}</span> •
@@ -37,17 +30,15 @@ function renderUserComments(userComments, allPosts) {
         commentsList.innerHTML = userComments
             .sort((a, b) => b.createdAt - a.createdAt)
             .map(comment => {
-                const originalPost = allPosts.find(p => p.id === comment.postId);
+                const originalPost = allPosts.find(p => p.id == comment.postId);
                 const postTitle = originalPost ? originalPost.title : '삭제된 게시글';
-                const shortComment = comment.content.length > 100 ? comment.content.substring(0, 100) + '...' : comment.content;
-                let statsHTML = ` • 👍 ${(comment.upvotes || []).length}`;
+                const shortComment = (comment.content || '').length > 100 ? comment.content.substring(0, 100) + '...' : (comment.content || '');
                 return `
                   <li class="profile-comment-item">
                     <div class="profile-comment-content">"${shortComment}"</div>
                     <div class="profile-comment-meta">
-                      <a href="posts.html#post-${comment.postId}">"${postTitle}"</a> 글에 남김 • 
+                      <a href="post-detail.html?id=${comment.postId}">"${postTitle}"</a> 글에 남김 • 
                       ${window.CommunityApp.utils.formatDate(comment.createdAt)}
-                      ${statsHTML}
                     </div>
                   </li>
                 `;
@@ -55,105 +46,92 @@ function renderUserComments(userComments, allPosts) {
     }
 }
 
-function renderBookmarks(allPosts, currentUser, profileUser) {
-    const bookmarksTabBtn = document.getElementById('bookmarks-tab-btn');
-    const bookmarksTabContent = document.getElementById('tab-content-bookmarks');
-    const bookmarksList = document.getElementById('profile-bookmarks-list');
-    
-    if (!currentUser || currentUser.id !== profileUser.id) {
-        if (bookmarksTabBtn) bookmarksTabBtn.style.display = 'none';
-        return;
-    }
-    if (bookmarksTabBtn) bookmarksTabBtn.style.display = 'inline-block';
-
-    if (!bookmarksList) return;
-
-    const bookmarkedPosts = allPosts
-        .filter(post => post.bookmarkedBy && post.bookmarkedBy.includes(currentUser.id))
-        .sort((a, b) => b.createdAt - a.createdAt);
-    
-    if (bookmarkedPosts.length === 0) {
-        bookmarksList.innerHTML = '<li>스크랩한 글이 없습니다.</li>';
-    } else {
-        bookmarksList.innerHTML = bookmarkedPosts.map(post => {            
-            return `
-              <li class="profile-list-item" onclick="location.href='posts.html#post-${post.id}'" style="cursor: pointer;">
-                <div class="post-item-title">[${post.category}] ${post.title}</div>
-                <div class="post-item-meta">
-                  <span>스크랩한 글</span> •
-                  <span>작성자: ${post.author}</span>
-                </div>
-              </li>
-            `;
-        }).join('');
-    }
-}
-
-function renderTechStacks(stacks) {
+function renderTechStacks(stacks, isOwner, profileUser) {
     const container = document.getElementById('profile-tech-stacks');
     const listEl = document.getElementById('tech-stack-list');
     if (!container || !listEl) return;
 
+    if (!document.getElementById('tech-stack-actions')) {
+        const actionsContainer = document.createElement('div');
+        actionsContainer.id = 'tech-stack-actions';
+        actionsContainer.className = 'tech-stack-actions';
+        container.appendChild(actionsContainer);
+    }
+    const actionsContainer = document.getElementById('tech-stack-actions');
+
     if (stacks && stacks.length > 0) {
         listEl.innerHTML = stacks.map(stack => `<span class="tech-stack-item">${stack}</span>`).join('');
-        container.style.display = 'block';
     } else {
         listEl.innerHTML = '<p class="no-stacks-notice">등록된 기술 스택이 없습니다.</p>';
-        container.style.display = 'block';
     }
-}
+    container.style.display = 'block';
 
-
-
-async function setupMentorApplication(app, profileUser, currentUser, isMentor) {
-    const applicationArea = document.getElementById('mentor-application-area');
-    if (!applicationArea || !currentUser || currentUser.name !== profileUser.name || isMentor) {
-        if(applicationArea) applicationArea.style.display = 'none';
-        return;
-    }
-
-    applicationArea.style.display = 'block';
-    const applications = await app.api.fetchMentorApplications();
-    const myApplication = applications.find(app => app.userId === currentUser.name);
-
-    if (myApplication) {
-        if (myApplication.status === 'pending') {
-            applicationArea.innerHTML = `<p style="font-size: 0.9rem; color: var(--text-secondary);">🚀 멘토 신청이 접수되어 검토 중입니다.</p>`;
-        } else if (myApplication.status === 'rejected') {
-            applicationArea.innerHTML = `
-                <p style="font-size: 0.9rem; color: var(--color-danger); margin-bottom: 0.5rem;">멘토 신청이 반려되었습니다. 내용을 보완하여 다시 신청할 수 있습니다.</p>
-                <button id="btn-apply-mentor" class="btn btn--primary">🚀 다시 신청하기</button>
-            `;
-        }
-        // 'approved' 상태는 isMentor가 true가 되어 이 함수가 실행되지 않으므로 처리 불필요
+    if (isOwner) {
+        actionsContainer.innerHTML = `<button id="edit-stacks-btn" class="btn btn--ghost">수정</button>`;
+        document.getElementById('edit-stacks-btn').addEventListener('click', () => showStackEditMode(stacks, profileUser));
     } else {
-        applicationArea.innerHTML = `<button id="btn-apply-mentor" class="btn btn--primary">🚀 멘토 신청하기</button>`;
+        actionsContainer.innerHTML = '';
     }
-    
-    // 모달 관련 요소 및 이벤트 리스너 연결
-    // '신규 신청' 또는 '다시 신청하기' 버튼이 화면에 존재할 경우에만 실행됩니다.
-    const applyBtn = document.getElementById('btn-apply-mentor');
-    if (!applyBtn) return; // 버튼이 없으면(예: 검토중 상태) 아래 로직을 실행하지 않습니다.
-    
-    const applyForm = document.getElementById('mentor-apply-form');
-    
-    // 멘토 신청 폼은 이제 별도 페이지가 없으므로, 폼 제출 시 바로 API를 호출합니다.
-    // 간단한 이력 정보 없이 신청만 하는 방식으로 변경합니다.
-    applyBtn.addEventListener('click', async () => { // 'id'를 사용하던 부분
-        if (confirm('멘토로 활동을 신청하시겠습니까? 관리자 검토 후 승인됩니다.')) {
-            try {
-                await app.api.createMentorApplication(currentUser.name); // name으로 변경
-                app.utils.showNotification('멘토 신청이 완료되었습니다. 검토 후 반영됩니다.', 'success');
-                location.reload();
-            } catch (error) {
-                app.utils.showNotification(error.message || '멘토 신청에 실패했습니다.', 'danger');
-            }
-        }
-    });
 }
 
+async function showStackEditMode(currentStacks, profileUser) {
+    const listEl = document.getElementById('tech-stack-list');
+    const actionsContainer = document.getElementById('tech-stack-actions');
+    const app = window.CommunityApp;
 
-// --- 페이지 초기화 로직 ---
+    try {
+        const allStacks = await app.api.fetchAllTechStacks();
+
+        listEl.innerHTML = `
+            <div class="tech-stack-edit-grid">
+                ${allStacks.map(stack => `
+                    <label class="tech-stack-checkbox-label">
+                        <input type="checkbox" name="techStack" value="${stack.stackName}" 
+                               ${currentStacks.includes(stack.stackName) ? 'checked' : ''}>
+                        ${stack.stackName}
+                    </label>
+                `).join('')}
+            </div>
+        `;
+
+        actionsContainer.innerHTML = `
+            <button id="save-stacks-btn" class="btn btn--primary">저장</button>
+            <button id="cancel-stacks-btn" class="btn btn--ghost">취소</button>
+        `;
+
+        document.getElementById('save-stacks-btn').addEventListener('click', () => handleSaveStacks(profileUser));
+        document.getElementById('cancel-stacks-btn').addEventListener('click', () => {
+            renderTechStacks(currentStacks, true, profileUser);
+        });
+    } catch (error) {
+        app.utils.showNotification('기술 스택 목록을 불러오는 데 실패했습니다.', 'danger');
+    }
+}
+
+async function handleSaveStacks(profileUser) {
+    const app = window.CommunityApp;
+    const saveButton = document.getElementById('save-stacks-btn');
+    saveButton.disabled = true;
+    saveButton.textContent = '저장 중...';
+
+    const selectedStacks = Array.from(document.querySelectorAll('input[name="techStack"]:checked'))
+                                .map(checkbox => checkbox.value);
+
+    try {
+        await app.api.updateMyStacks(selectedStacks);
+        app.utils.showNotification('기술 스택이 성공적으로 업데이트되었습니다.', 'success');
+
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+
+    } catch (error) {
+        app.utils.showNotification('기술 스택 업데이트에 실패했습니다.', 'danger');
+        saveButton.disabled = false;
+        saveButton.textContent = '저장';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     await window.APP_INITIALIZATION;
     const app = window.CommunityApp;
@@ -165,23 +143,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         userBadge: document.getElementById('profile-user-badge'),
         postsList: document.getElementById('profile-posts-list'),
         commentsList: document.getElementById('profile-comments-list'),
-        resumeCard: document.getElementById('resume-card'),
-        editResumeBtn: document.getElementById('edit-resume-btn'),
-        resumeView: document.getElementById('resume-view'),
-        resumeCompany: document.getElementById('resume-company'),
-        resumeExperience: document.getElementById('resume-experience'),
-        resumeSkills: document.getElementById('resume-skills'),
-        resumeImageSection: document.getElementById('resume-image-section'),
-        resumeImage: document.getElementById('resume-image'),
         bookmarkCard: document.getElementById('bookmark-card'),
     };
-    elements.noResumeNotice = document.getElementById('no-resume-notice');
 
     const urlParams = new URLSearchParams(window.location.search);
-    const targetUserId = urlParams.get('user');
+    let targetUserName = urlParams.get('user');
 
-    if (!targetUserId) {
-        elements.userId.textContent = '사용자를 찾을 수 없습니다.';
+    if (!targetUserName && currentUser) {
+        targetUserName = currentUser.name;
+        history.replaceState({}, '', `profile.html?user=${encodeURIComponent(targetUserName)}`);
+    }
+
+    if (!targetUserName) {
+        elements.userId.innerHTML = '<p>프로필을 조회할 사용자를 지정해주세요. (예: .../profile.html?user=admin)</p>';
         return;
     }
 
@@ -189,105 +163,66 @@ document.addEventListener('DOMContentLoaded', async () => {
         const allUsers = app.state.users;
         const allPosts = app.state.posts;
 
-        const profileUser = allUsers.find(u => u.name === targetUserId); // ✅ [수정] id 대신 name으로 찾습니다.
+        const profileUser = allUsers.find(u => u.name === targetUserName);
 
         if (!profileUser) {
             elements.userId.textContent = '존재하지 않는 사용자입니다.';
             return;
         }
 
-        // [수정] 하위 호환성을 위한 멘토 상태 보정
-        // isMentor 속성이 없는 구버전 데이터의 경우, 재직자나 관리자이면 멘토로 간주합니다.
-        // ✅ [수정] 영문 Enum 이름 대신 한글 역할명과 비교합니다.
-        if (profileUser.isMentor === undefined) {
-            profileUser.isMentor = (profileUser.role === '재직자' || profileUser.role === '관리자');
-        }
-
         elements.userId.textContent = profileUser.name;
         elements.userCategory.textContent = profileUser.role || '사용자';
 
-        // --- 평판 계산 ---
-        const userComments = (await app.api.fetchAllComments() || []).filter(c => c.author === profileUser.name);
-        const userPosts = allPosts.filter(p => p.author === profileUser.name);
+        if (elements.userBadge) elements.userBadge.style.display = 'none';
 
-        const totalBestAnswers = userComments.filter(c => c.isBest).length;
+        const startChatButton = document.getElementById('start-chat-btn');
+        const isOwner = currentUser && currentUser.name === profileUser.name;
 
-        // --- 배지 렌더링 ---
-        // isTrustedMentor는 이제 멘토 자격 여부가 아닌, '신뢰도 높은' 멘토임을 나타내는 시각적 배지 표시용으로만 사용됩니다.
-        if (profileUser.isMentor && totalBestAnswers >= 5) {
-            elements.userBadge.textContent = '🏅 신뢰하는 멘토';
-            elements.userBadge.className = 'profile-trust-badge';
-            elements.userBadge.style.display = 'inline-block';
-        } else if (profileUser.isMentor) {
-            elements.userBadge.textContent = '멘토';
-            elements.userBadge.className = 'profile-mentor-badge';
-            elements.userBadge.style.display = 'inline-block';
-        } else {
-            if (elements.userBadge) elements.userBadge.style.display = 'none';
-        }
+        if (startChatButton && !isOwner && currentUser) {
+            startChatButton.style.display = 'inline-block';
+            startChatButton.addEventListener('click', async () => {
+                try {
+                    const room = await app.api.findOrCreate1on1Room(profileUser.id); // profileUser.id는 숫자 ID
 
-        // --- 기술 스택 렌더링 ---
-        // 프로필 주인의 기술 스택을 가져와서 표시합니다.
-        try {
-            // ✅ [개선] shared.js에 추가된 API를 사용하여 모든 사용자의 기술 스택을 가져옵니다.
-            const stacks = await app.api.getStacksByUserName(profileUser.name);
-            renderTechStacks(stacks);
-        } catch (error) {
-            console.error("Failed to fetch tech stacks:", error);
-        }
-        
-        // --- 멘토 토글 설정 ---
-        // 멘토 기능 활성화 여부는 profileUser.isMentor 값으로 직접 판단합니다.
-        
-        const applications = await app.api.fetchMentorApplications();
-        const userApplication = applications.find(a => a.userId === profileUser.name);
-
-        // 멘토이거나, 자신의 프로필을 볼 때만 이력서 카드 표시
-        if (profileUser.isMentor || (currentUser && currentUser.name === profileUser.name)) {
-            elements.resumeCard.style.display = 'block';
-        }
-
-        if (userApplication && userApplication.resume) {
-            // 이력서 정보가 있을 때
-            elements.resumeView.style.display = 'block';
-            elements.noResumeNotice.style.display = 'none';
-            elements.resumeCompany.textContent = userApplication.resume.company || '정보 없음';
-            elements.resumeExperience.textContent = userApplication.resume.experience || '정보 없음';
-            elements.resumeSkills.textContent = userApplication.resume.skills || '정보 없음';
-
-            if (userApplication.resume.projectImage) {
-                elements.resumeImage.src = userApplication.resume.projectImage;
-                elements.resumeImageSection.style.display = 'block';
-            } else {
-                elements.resumeImageSection.style.display = 'none';
-            }
-        } else {
-            // 이력서 정보가 없을 때
-            elements.resumeView.style.display = 'none';
-            elements.noResumeNotice.style.display = 'block';
-        }
-        // 프로필 주인이 본인일 경우, 이력서 작성/수정 버튼 표시
-        if (currentUser && currentUser.name === profileUser.name) {
-            elements.editResumeBtn.style.display = 'inline-flex';
-            elements.editResumeBtn.textContent = (userApplication && userApplication.resume) ? '✏️ 수정하기' : '✏️ 작성하기';
-            elements.editResumeBtn.addEventListener('click', () => {
-                window.location.href = 'edit-resume.html';
+                    if (room && room.roomId) {
+                        window.location.href = `chat.html?roomId=${room.roomId}`;
+                    } else {
+                        app.utils.showNotification('채팅방을 열 수 없습니다.', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Failed to create or find chat room:', error);
+                    app.utils.showNotification(error.message || '채팅방을 여는 데 실패했습니다.', 'danger');
+                }
             });
         }
 
-        // --- 목록 렌더링 ---
+        try {
+            const userStacks = await app.api.getStacksByUserName(profileUser.name);
+            renderTechStacks(userStacks, isOwner, profileUser);
+        } catch (error) {
+            console.error("Failed to fetch tech stacks for user:", error);
+            document.getElementById('profile-tech-stacks').innerHTML = '<p>기술 스택을 불러오는 데 실패했습니다.</p>';
+        }
+
+        const userPosts = allPosts.filter(p => p.author === profileUser.name);
+        const allCommentsRaw = await app.api.fetchAllComments() || [];
+        const allComments = allCommentsRaw.map(c => ({
+            id: c.commentId,
+            content: c.contents,
+            author: c.authorName,
+            createdAt: c.createDate,
+            postId: c.postId 
+        }));
+        const userComments = allComments.filter(c => c.author === profileUser.name);
         renderUserPosts(userPosts, currentUser, profileUser);
         renderUserComments(userComments, allPosts);
-        renderBookmarks(allPosts, currentUser, profileUser);
 
-        // --- 탭 기능 설정 ---
         const tabContainer = document.querySelector('.profile-tabs');
         if (tabContainer) {
             tabContainer.addEventListener('click', (e) => {
                 if (e.target.matches('.tab-btn')) {
                     const tabName = e.target.dataset.tab;
 
-                    // 모든 탭 버튼과 컨텐츠에서 active 클래스 제거
                     tabContainer.querySelectorAll('.tab-btn').forEach(btn => {
                         btn.classList.remove('active');
                     });
@@ -295,7 +230,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         content.classList.remove('active');
                     });
 
-                    // 클릭된 탭과 컨텐츠에 active 클래스 추가
                     e.target.classList.add('active');
                     const activeContent = document.getElementById(`tab-content-${tabName}`);
                     if (activeContent) activeContent.classList.add('active');
@@ -303,6 +237,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     }
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .tech-stack-item {
+            display: inline-block;
+            background-color: var(--color-primary-light, #e0e7ff);
+            color: var(--color-primary-dark, #3730a3);
+            padding: 0.3rem 0.8rem;
+            margin: 0.25rem;
+            border-radius: var(--radius-full, 9999px);
+            font-size: 0.9rem;
+            font-weight: 500;
+            line-height: 1.2;
+            transition: transform 0.2s ease;
+        }
+
+        .tech-stack-item:hover {
+            transform: translateY(-2px);
+        }
+    `;
+    document.head.appendChild(style);
 
     initializeProfilePage();
 });

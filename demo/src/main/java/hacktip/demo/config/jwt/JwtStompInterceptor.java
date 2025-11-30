@@ -7,13 +7,13 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-
-import hacktip.demo.security.UserDetailsServiceImpl;
 
 @Slf4j
 @Component
@@ -21,45 +21,44 @@ import hacktip.demo.security.UserDetailsServiceImpl;
 public class JwtStompInterceptor implements ChannelInterceptor {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserDetailsServiceImpl userDetailsServiceImpl; // UserDetailsService 주입
+    private final UserDetailsService userDetailsService;
 
-    /**
-     * STOMP 메시지가 전송되기 전에 (preSend) 호출되는 메서드
-     */
+    @Override
+    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+        // [수정 1] wrap 대신 getAccessor를 사용하여 기존 메시지의 accessor를 가져옵니다.
+        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-    public Message<?> preSend(Message<?> message, MessageChannel channel){
-        // 1. StompHeaderAccessor로 메시지 헤더에 접근
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+        // accessor가 null일 경우 방어 로직 (드문 경우)
+        if (accessor == null) {
+            return message;
+        }
 
-        // 2. (핵심) STOMP의 CONNECT 명령일 때만 JWT 검증 수행
-        if(StompCommand.CONNECT.equals(accessor.getCommand())){
-            // 3. STOMP 헤더에서 "Authorization" 토큰 추출
-            //    (클라이언트는 CONNECT 시 이 헤더에 "Bearer [token]"을 담아 보내야 함)
+        // [수정 2] 주로 CONNECT 시점에만 토큰 검증을 수행하여 세션을 인증합니다.
+        // SEND 때마다 토큰을 검사하려면 클라이언트가 모든 메시지에 헤더를 붙여야 하므로 비효율적일 수 있습니다.
+        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+
             String bearerToken = accessor.getFirstNativeHeader("Authorization");
+            String token = jwtTokenProvider.resolveToken(bearerToken);
 
-            // 4. JwtAuthenticationFilter의 로직과 거의 동일
-            String token = jwtTokenProvider.resolveToken(bearerToken);//토큰 꺼내기
-            if(StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)){
-
+            if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
                 String email = jwtTokenProvider.getEmailFromToken(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                // 5. (중요) UserDetailsServiceImpl을 통해 UserDetails 객체를 가져옴
-                UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(email);
-
-                // 6. (매우 중요) UserDetails 객체를 사용하여 인증 객체 생성 후 WebSocket 세션에 저장
                 Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                //    이후 @MessageMapping에서 Principal로 이 정보를 꺼내 쓸 수 있음
+
+                // [핵심] 인증 객체를 WebSocket 세션(Accessor)에 심습니다.
+                // 이렇게 하면 이후 SEND 요청 시에도 Spring이 이 세션의 주인을 기억합니다.
                 accessor.setUser(authentication);
-                log.info("STOMP user authenticated: {}", email);
-            } else{
-                log.warn("STOMP connection attempt failed: Invalid JWT");
-                // (선택) 인증 실패 시 연결을 강제로 끊는 예외를 발생시킬 수 있으나,
-                //       setUser(null) 상태로 두면 @MessageMapping에서 Principal이 null이 됨.
-                //       (여기서는 예외 대신 로깅만 함)
+
+                log.info("STOMP Connection Authenticated: {}", email);
+            } else {
+                // [수정 3] 토큰이 없거나 유효하지 않으면 연결 자체를 끊어야 합니다. (예외 발생)
+                // 예외를 발생시키지 않으면 '익명 사용자'로 연결되어 버립니다.
+                log.error("STOMP Connection Error: Invalid Token");
+                throw new IllegalArgumentException("유효하지 않은 토큰입니다. 연결이 거부되었습니다.");
             }
         }
 
-        // 7. 다음 인터셉터 또는 컨트롤러로 메시지 전달
         return message;
     }
 }

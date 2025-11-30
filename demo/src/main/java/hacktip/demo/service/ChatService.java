@@ -31,14 +31,14 @@ public class ChatService {
     /**
      * * 채팅 메시지를 DB에 저장하고, 저장된 메시지를 DTO로 변환하여 반환  (수정) 채팅 메시지 저장
      * @param requestDto (roomId, content) - memberId 제거됨
-     * @param email      (토큰에서 추출한 인증된 사용자 이메일)
+     * @param memberId      (토큰에서 추출한 인증된 사용자 ID)
      * @return ChatMessageResponseDto
      */
     @Transactional
-    public ChatMessageResponseDto saveMessage(ChatMessageRequestDto requestDto, String email){
+    public ChatMessageResponseDto saveMessage(ChatMessageRequestDto requestDto, Long memberId){
         // 1. (임시) memberId로 Member 엔티티 조회 (보안 경고: 5단계에서 수정 예정)  (수정) DTO의 memberId 대신, 인증된 email로 Member 엔티티 조회
-        Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. Email: " + email));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. ID: " + memberId));
 
         // 2. roomId로 ChatRoom 엔티티 조회
         ChatRoom chatRoom = chatRoomRepository.findById(requestDto.getRoomId())
@@ -65,19 +65,13 @@ public class ChatService {
     /**
      * (수정) * 특정 채팅방의 모든 메시지 내역을 조회 (오래된 순 -> 최신 순)
      * @param roomId 조회할 채팅방 ID
-     * @param email  (토큰에서 추출한 인증된 사용자 이메일)
+     * @param memberId  (토큰에서 추출한 인증된 사용자 ID)
      * @return List<ChatMessageResponseDto>
      */
     @Transactional // (읽기 전용이지만, 엔티티에서 DTO로 변환 시 Lazy Loading이 발생할 수 있으므로 트랜잭션 보장)
-    public List<ChatMessageResponseDto> loadMessage(Long roomId, String email){ // 9. (수정) 파라미터 변경 (roomId, email)
+    public List<ChatMessageResponseDto> loadMessage(Long roomId, Long memberId){ // 9. (수정) 파라미터 변경 (roomId, memberId)
 
         // 10. (핵심) "인가(Authorization)" - 이 사용자가 채팅방 멤버가 맞는지 검사
-        // 10-1. 이메일로 멤버 ID 조회
-        Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. Email: " + email));
-
-        Long memberId = member.getMemberId();
-
         // 10-2. 복합키(ChatRoomMemberId) 생성
         ChatRoomMemberId chatRoomMemberId = new ChatRoomMemberId(roomId, memberId);
 

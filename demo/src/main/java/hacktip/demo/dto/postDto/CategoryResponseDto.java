@@ -3,7 +3,6 @@ package hacktip.demo.dto.postDto;
 import hacktip.demo.domain.post.Category;
 import lombok.Getter;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter

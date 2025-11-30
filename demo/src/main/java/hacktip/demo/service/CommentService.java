@@ -12,6 +12,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
@@ -25,6 +26,15 @@ public class CommentService {
     private final PostCommentRepository commentRepository;
     private final PostRepository postRepository;
     private final MemberRepository memberRepository; // 작성자 정보를 위해 MemberRepository 주입
+
+    @GetMapping
+    public List<CommentResponseDto>findAll(){
+        List<PostComment> comments = commentRepository.findAll();
+
+        return comments.stream()
+                .map(CommentResponseDto::new)
+                .toList();
+    }
 
     /**
      * 특정 게시글의 모든 댓글 조회

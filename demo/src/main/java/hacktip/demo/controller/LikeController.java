@@ -6,6 +6,7 @@ import hacktip.demo.service.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,10 +22,10 @@ public class LikeController {
     @PostMapping
     public ResponseEntity<LikeResponseDto> toggleLike(
             @PathVariable Long postId,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        String email = userDetails.getMember().getEmail();
-        int updatedLikes = likeService.toggleLike(postId, email);
-        return ResponseEntity.ok(new LikeResponseDto(updatedLikes));
+        String email = userDetails.getUsername();
+        LikeResponseDto updatedLikes = likeService.toggleLike(postId, email);
+        return ResponseEntity.ok(updatedLikes);
     }
 }

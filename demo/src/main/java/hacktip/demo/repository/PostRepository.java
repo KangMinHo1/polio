@@ -1,7 +1,9 @@
 package hacktip.demo.repository;
 
 import hacktip.demo.domain.post.Post;
+import hacktip.demo.dto.CategoryPostCountDto;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
@@ -11,4 +13,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findAllByOrderByCreateDateDesc();
 
     List<Post> findAllByCategory_CategoryNameOrderByCreateDateDesc(String categoryName);
+
+    // [추가] 카테고리별 게시물 수 통계 조회
+    @Query("SELECT new hacktip.demo.dto.CategoryPostCountDto(c.categoryName, COUNT(p)) " +
+           "FROM Post p JOIN p.category c " +
+           "GROUP BY c.categoryName " +
+           "ORDER BY COUNT(p) DESC")
+    List<CategoryPostCountDto> countPostsByCategory();
 }

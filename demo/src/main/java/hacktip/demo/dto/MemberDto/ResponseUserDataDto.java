@@ -1,6 +1,5 @@
 package hacktip.demo.dto.MemberDto;
 
-import hacktip.demo.domain.MemberStack;
 import hacktip.demo.domain.Role;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,5 +16,5 @@ public class ResponseUserDataDto {
     private Long id;
     private String name;
     private Role role;
-    List<MemberStack> memberStack;
+    List<MemberStackDto> memberStacks; // [수정] 엔티티 대신 DTO를 사용
 }

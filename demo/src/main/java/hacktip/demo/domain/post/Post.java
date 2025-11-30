@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 
 import java.util.ArrayList;
 import java.sql.Timestamp;
@@ -58,6 +59,10 @@ public class Post {
     // Post와 PostLike의 연관관계 (하나의 게시글은 여러 좋아요를 가짐)
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostLike> likes = new ArrayList<>();
+
+    // [성능 개선] N+1 문제 해결을 위해 댓글 수를 서브쿼리로 계산
+    @Formula("(SELECT count(1) FROM post_comment pc WHERE pc.postid = postid)")
+    private int commentCount;
 
     // [변경] 게시글 - 카테고리 관계 (N:1)
     @ManyToOne(fetch = FetchType.LAZY)

@@ -39,9 +39,9 @@ public class ChatRoomController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ){
 
-        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
-        // 6. (수정) 서비스 호출
-        ChatRoomResponseDto responseDto = chatRoomService.findOrCreate1on1Room(email, requestDto.getTargetEmail());
+        Long myMemberId = userDetails.getMemberId(); // [수정] 이메일 대신 memberId 추출
+        // [수정] 서비스 호출 시 targetEmail 대신 targetMemberId 전달
+        ChatRoomResponseDto responseDto = chatRoomService.findOrCreate1on1Room(myMemberId, requestDto.getTargetMemberId());
 
         // 7. (수정) 201 Created 대신 200 OK 반환
         // (이유: 찾았을(Find) 수도, 생성(Create)했을 수도 있으므로 200 OK가 적절)
@@ -55,10 +55,10 @@ public class ChatRoomController {
      */
     @GetMapping("/rooms")
     public ResponseEntity<List<ChatRoomResponseDto>> getMyRooms(@AuthenticationPrincipal UserDetailsImpl userDetails){
-        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
+        Long memberId = userDetails.getMemberId(); // [수정] 이메일 대신 memberId 추출
 
         // 3. 서비스를 호출하여 '내가 속한 방' 목록 반환
-        List<ChatRoomResponseDto> myRooms = chatRoomService.findMyChatRooms(email);
+        List<ChatRoomResponseDto> myRooms = chatRoomService.findMyChatRooms(memberId);
 
         return ResponseEntity.ok(myRooms);
     }
@@ -74,9 +74,9 @@ public class ChatRoomController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ){
 
-        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
+        Long memberId = userDetails.getMemberId(); // [수정] 이메일 대신 memberId 추출
         // 2. 서비스를 호출하여 메시지 내역을 가져옴 --> // 3. (수정) Service 호출 시, roomId와 함께 인증된 이메일 전달
-        List<ChatMessageResponseDto> message = chatService.loadMessage(roomId, email);
+        List<ChatMessageResponseDto> message = chatService.loadMessage(roomId, memberId);
 
         // 3. 200 OK와 함께 메시지 리스트 반환
         return ResponseEntity.ok(message);

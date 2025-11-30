@@ -1,125 +1,163 @@
-/* chat.html 전용 스타일 */
+/**
+ * chat.css
+ * 채팅 페이지 전용 스타일
+ */
 
-.chat-container {
-    /* Inherits from .card in components.css */
-    /* background-color, border, border-radius, box-shadow */
-    max-width: 900px;
-    margin: 0 auto;
+/* 2단 레이아웃 컨테이너 */
+.chat-layout-container {
     display: flex;
-    flex-direction: column;
-    height: 75vh; /* 높이 살짝 늘림 */
-    padding: 0; /* 내부에서 패딩 제어 */
-    overflow: hidden; /* 내부 요소가 radius 넘지 않도록 */
+    gap: 1.5rem; /* 사이드바와 메인 컨텐츠 사이 간격 */
+    height: 75vh; /* 뷰포트 높이의 75%로 설정하여 화면에 맞춤 */
+    max-height: 800px; /* 최대 높이 제한 */
 }
 
+/* 채팅 사이드바 (채팅방 목록) */
+.chat-sidebar {
+    flex: 0 0 300px; /* 너비 300px 고정, 줄어들거나 늘어나지 않음 */
+    display: flex;
+    flex-direction: column;
+    padding: 0; /* 내부 컨텐츠가 꽉 차도록 padding 제거 */
+    overflow: hidden; /* 내부 요소가 넘치지 않도록 */
+}
+
+.sidebar-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.chat-room-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem;
+    overflow-y: auto; /* 채팅방이 많아지면 스크롤 */
+    flex-grow: 1;
+}
+
+.chat-room-item {
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-bottom: 0.25rem;
+}
+
+.chat-room-item:hover {
+    background-color: var(--bg-secondary);
+}
+
+.chat-room-item.active {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-dark);
+    font-weight: 600;
+}
+
+.chat-room-item .room-name {
+    /* 말줄임표(...) 처리 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 메인 채팅 컨테이너 */
+.chat-main-container {
+    flex-grow: 1; /* 남은 공간을 모두 차지 */
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* 채팅방 선택 전 환영 화면 */
+.chat-welcome-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+/* 채팅방 컨텐츠 (메시지 + 입력폼) */
+#chat-room-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* 메시지 표시 영역 */
 .chat-messages {
     flex-grow: 1;
-    overflow-y: auto;
+    overflow-y: auto; /* 메시지가 많아지면 스크롤 */
     padding: 1.5rem;
-    background-color: var(--bg-secondary); /* 페이지 배경과 동일하게 */
     display: flex;
     flex-direction: column;
-    gap: 0.75rem; /* 메시지 사이 간격 살짝 줄임 */
+    gap: 1.25rem; /* 메시지 사이 간격 */
 }
 
-/* Optional: Subtle scrollbar styling */
-.chat-messages::-webkit-scrollbar {
-    width: 6px;
-}
-.chat-messages::-webkit-scrollbar-track {
-    background: transparent;
-}
-.chat-messages::-webkit-scrollbar-thumb {
-    background-color: var(--border-light);
-    border-radius: 6px;
-}
-:root.dark .chat-messages::-webkit-scrollbar-thumb {
-    background-color: var(--border-light);
-}
-
+/* 개별 메시지 */
 .chat-message {
-    padding: 0.6rem 1rem; /* 패딩 조정 */
-    border-radius: 12px; /* 둥근 정도 조정 */
-    max-width: 75%; /* 최대 너비 살짝 늘림 */
-    line-height: 1.5; /* 줄 간격 조정 */
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* 미묘한 그림자 */
-    transition: background-color 1s ease-in-out; /* 하이라이트 트랜지션 유지 */
+    display: flex;
+    flex-direction: column;
+    max-width: 70%; /* 메시지 최대 너비 */
 }
 
 .message-meta {
-    font-size: 0.75rem; /* 폰트 살짝 줄임 */
-    font-weight: 500; /* 굵기 조정 */
-    margin-bottom: 0.3rem; /* 내용과의 간격 조정 */
-    opacity: 0.8; /* 약간 투명하게 */
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
 }
 
 .message-content {
-    font-size: 0.9rem; /* 폰트 살짝 줄임 */
-    word-break: break-word; /* 긴 단어 줄바꿈 */
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-lg);
+    line-height: 1.5;
+    word-break: break-word; /* 긴 단어가 있을 경우 줄바꿈 */
 }
 
-/* 내가 보낸 메시지 */
+/* 다른 사람 메시지 (왼쪽 정렬) */
+.other-message {
+    align-self: flex-start;
+}
+.other-message .message-content {
+    background-color: var(--bg-secondary);
+    border-top-left-radius: 0;
+}
+
+/* 내 메시지 (오른쪽 정렬) */
 .my-message {
-    background-color: var(--color-primary);
-    color: white;
     align-self: flex-end;
-    border-bottom-right-radius: 4px; /* 뾰족한 꼬리 모양 유지 */
 }
 .my-message .message-meta {
-    color: rgba(255, 255, 255, 0.8);
+    text-align: right;
+}
+.my-message .message-content {
+    background-color: var(--color-primary);
+    color: white;
+    border-top-right-radius: 0;
 }
 
-/* 다른 사람이 보낸 메시지 */
-.other-message {
-    background-color: var(--bg-primary); /* 카드 배경색 사용 (흰색) */
-    color: var(--text-primary);
-    align-self: flex-start;
-    border-bottom-left-radius: 4px; /* 뾰족한 꼬리 모양 유지 */
-    border: 1px solid var(--border-light); /* 옅은 테두리 추가 */
-}
-:root.dark .other-message {
-    background-color: var(--bg-tertiary); /* 다크모드 배경 */
-    border-color: transparent; /* 다크모드 테두리 제거 */
-}
-.other-message .message-meta {
-    color: var(--text-secondary);
-}
-
-
+/* 메시지 입력 폼 */
 .chat-form {
     display: flex;
-    align-items: center; /* 세로 중앙 정렬 */
-    padding: 1rem 1.5rem; /* 패딩 조정 */
-    border-top: 1px solid var(--border-light);
-    background-color: var(--bg-primary); /* 메시지 영역과 구분 */
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    gap: 0.75rem;
 }
 
-.chat-form input {
+#chat-input {
     flex-grow: 1;
-    padding: 0.75rem 1rem; /* 패딩 조정 */
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-md); /* 둥근 정도 조정 */
-    font-size: 0.95rem; /* 폰트 조정 */
-    margin-right: 0.75rem; /* 버튼과의 간격 조정 */
-    background-color: var(--bg-secondary); /* 배경색 */
-}
-:root.dark .chat-form input { background-color: var(--bg-tertiary); }
-
-.chat-form button.btn-send { /* 전송 버튼 */
-    padding: 0.75rem 1.25rem; /* 패딩 조정 */
-    border-radius: var(--radius-md); /* 둥근 정도 조정 */
-    font-size: 0.9rem; /* 폰트 조정 */
-    flex-shrink: 0; /* 버튼 크기 줄어들지 않도록 */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
 }
 
-/* 하이라이트된 메시지 스타일 */
-.highlighted-message {
-    background-color: var(--color-primary-light) !important;
-    /* ✅ [수정] 테두리 제거 (다른 스타일과 충돌 방지) */
-    /* border: 1px solid var(--color-primary); */
-    box-shadow: 0 0 8px var(--color-primary-light); /* 글로우 효과 */
-}
-:root.dark .highlighted-message {
-    background-color: #25395B !important; /* color-primary-light (dark) */
-    box-shadow: 0 0 8px #25395B;
+#chat-input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-light);
 }

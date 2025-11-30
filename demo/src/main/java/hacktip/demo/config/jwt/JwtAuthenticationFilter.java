@@ -6,7 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // 1. [필수] 이 import가 있어야 합니다.
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,56 +17,42 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/**
- * JWT 토큰을 검증하고,
- * 토큰이 유효할 경우 Spring Security 컨텍스트에 인증 정보를 설정하는 필터.
- * (스프링 시큐리티의 UsernamePasswordAuthenticationFilter 앞에 위치하게 됨)
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class JwtAuthenticationFilter extends OncePerRequestFilter { // 2. 요청당 한 번만 실행됨
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserDetailsServiceImpl userDetailsServiceImpl; // UserDetailsService 주입
+    private final UserDetailsServiceImpl userDetailsServiceImpl;
 
-    // 필터의 핵심 로직
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        // 3. 요청 헤더에서 "Authorization" 헤더를 가져옴
+        if (request.getRequestURI().startsWith("/ws-stomp") && "websocket".equalsIgnoreCase(request.getHeader("Upgrade"))) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String bearerToken = request.getHeader("Authorization");
 
-        // 4. "Bearer " 접두사를 제거하여 순수 토큰을 추출
         String token = jwtTokenProvider.resolveToken(bearerToken);
 
-        // 5. 토큰이 비어있는지 확인하고, 우리 서버에서 만든 토큰이 맞는지 검증
         if(StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)){
 
-            // 6. 토큰이 유효하면, 토큰에서 사용자 이메일(Subject)을 추출
             String email = jwtTokenProvider.getEmailFromToken(token);
             try {
-                // 7. (핵심) UserDetailsServiceImpl을 통해 UserDetails 객체를 가져옴
                 UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(email);
 
-                // 8. UserDetails 객체를 사용하여 인증 객체(Authentication) 생성
-                //    - Principal로 UserDetails 객체 자체를 사용
                 Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-                // 8. (매우 중요) SecurityContextHolder에 인증 객체를 저장
-                //    -> 이 요청이 끝날 때까지 "이 사용자는 인증된 사용자"라고 등록하는 것
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (Exception e) {
                 log.error("Could not set user authentication in security context", e);
-                // DB 조회 실패 시, 인증 객체를 설정하지 않으므로(401) 예외를 굳이 던지지 않아도 됨
             }
 
 
         }
 
-        // 9. 다음 필터로 요청과 응답을 전달
-        // (토큰이 없거나 유효하지 않아도, 필터 체인은 계속 진행되어야 함.
-        //  -> 뒤에 있는 시큐리티 필터가 "인증 안 됐네?"라며 막아줄 것임)
         filterChain.doFilter(request, response);
 
     }

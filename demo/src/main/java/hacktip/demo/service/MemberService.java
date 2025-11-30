@@ -5,6 +5,7 @@ import hacktip.demo.domain.*;
 import hacktip.demo.dto.*;
 import hacktip.demo.dto.MemberDto.MemberLoginRequestDto;
 import hacktip.demo.dto.MemberDto.MemberSignUpRequestDto;
+import hacktip.demo.dto.MemberDto.MemberStackDto;
 import hacktip.demo.dto.MemberDto.MemberSignUpResponseDto;
 import hacktip.demo.dto.MemberDto.ResponseUserDataDto;
 import hacktip.demo.repository.MemberRepository;
@@ -12,15 +13,17 @@ import hacktip.demo.repository.MemberStackRepository;
 import hacktip.demo.repository.RefreshTokenRepository;
 import hacktip.demo.repository.TechStackRepository;
 import hacktip.demo.security.UserDetailsImpl;
-import jakarta.transaction.Transactional;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,7 +49,7 @@ public class MemberService {
 
         //이메일 중복 검사
         if(memberRepository.existsByEmail(request.getEmail())){
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다,");
+            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
         //이름 중복 검사
         if(memberRepository.existsByName(request.getName())){
@@ -57,6 +60,7 @@ public class MemberService {
         if (request.getRole() == Role.ADMIN) {
             throw new IllegalArgumentException("관리자 권한으로 가입할 수 없습니다.");
         }
+
         // 4. [수정] Service에서 Entity 조립 (DTO.toEntity 삭제 대응)
         Member entity = Member.builder()
                 .email(request.getEmail())
@@ -128,8 +132,41 @@ public class MemberService {
     //로그인한 회원의 이름과 역할 제공
     public ResponseUserDataDto getCurrentUser(UserDetailsImpl userDetails){
         Member member = userDetails.getMember();
-        List<MemberStack> memberStack = memberStackRepository.findByMember_MemberId(member.getMemberId());
-        return new ResponseUserDataDto(member.getMemberId(), member.getName(), member.getRole(), memberStack);
+        // 1. [수정] MemberStack 엔티티 리스트 조회
+        List<MemberStack> memberStackEntities = memberStackRepository.findByMember_MemberId(member.getMemberId());
+        // 2. [수정] MemberStack 엔티티 리스트를 MemberStackDto 리스트로 변환
+        List<MemberStackDto> memberStackDto = memberStackEntities.stream()
+                .map(MemberStackDto::new)
+                .collect(Collectors.toList());
+        return new ResponseUserDataDto(member.getMemberId(), member.getName(), member.getRole(), memberStackDto);
+    }
+
+    // 사용자의 이름으로 기술스택 가져오기
+    public List<String> getStacksByUserName(String userName){
+        List<MemberStack> stacks = memberStackRepository.findByMember_Name(userName);
+        return stacks.stream()
+                .map(stack -> stack.getTechStack().getStackName())
+                .toList();
+
+    }
+
+    //모든 유저 정보 일부 가져오기
+    @Transactional(readOnly = true)
+    public List<ResponseUserDataDto> findAllUsers() {
+        // 1. DB에서 모든 Member 엔티티를 가져옵니다.
+        List<Member> allMembers = memberRepository.findAll();
+
+        // 2. 각 Member를 ResponseUserDataDto로 변환합니다.
+        return allMembers.stream()
+                .map(member -> {
+                    // [수정] 각 멤버의 기술 스택을 DTO로 변환
+                    List<MemberStack> memberStackEntities = memberStackRepository.findByMember_MemberId(member.getMemberId());
+                    List<MemberStackDto> memberStackDtos = memberStackEntities.stream()
+                            .map(MemberStackDto::new)
+                            .collect(Collectors.toList());
+                    return new ResponseUserDataDto(member.getMemberId(), member.getName(), member.getRole(), memberStackDtos);
+                })
+                .collect(Collectors.toList());
     }
 
     // 2. === [토큰 재발급 메서드 추가] ===
@@ -175,5 +212,31 @@ public class MemberService {
 
         // 6. 새 Access Token을 DTO에 담아 반환
         return new TokenResponseDto(newAccessToken);
+    }
+
+    @Transactional
+    public void updateMemberStacks(String email, List<String> stackNames) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
+
+        // 1. 기존 기술 스택 모두 삭제
+        memberStackRepository.deleteByMember(member);
+
+        // 2. [핵심] 삭제 작업을 DB에 즉시 반영 (flush)
+        //    이것을 호출하지 않으면, 아래의 save와 순서가 꼬여 Unique Constraint 오류가 발생할 수 있음
+        memberStackRepository.flush();
+
+        // 2. [수정] 요청받은 기술 스택 목록에서 중복을 제거
+        //    List를 Set으로 변환하면 중복된 요소가 자동으로 제거됩니다.
+        List<String> distinctStackNames = stackNames.stream().distinct().collect(Collectors.toList());
+
+        // 3. 중복이 제거된 기술 스택 목록을 DB에 추가
+        for (String stackName : distinctStackNames) {
+            TechStack techStack = techStackRepository.findByStackName(stackName)
+                    .orElseGet(() -> techStackRepository.save(new TechStack(stackName)));
+ 
+            MemberStack memberStack = new MemberStack(member, techStack);
+            memberStackRepository.save(memberStack);
+        }
     }
 }

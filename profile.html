@@ -23,13 +23,16 @@
                         <span id="profile-user-category" class="profile-category-badge">카테고리</span>
                         <span id="profile-user-badge" class="profile-trust-badge" style="display: none;"></span>
                     </div>
+                    <div class="profile-actions" style="margin-top: 1rem;">
+                        <!-- JS를 통해 다른 사용자의 프로필일 경우에만 표시됩니다. -->
+                        <button id="start-chat-btn" class="btn btn--primary" style="display: none;">💬 1:1 채팅하기</button>
+                    </div>
                     <div id="mentor-application-area" style="display: none; margin-top: 1rem;">
                         <!-- JS를 통해 내용이 채워집니다 -->
                     </div>
                     <div id="profile-tech-stacks" class="profile-tech-stacks" style="margin-top: 1rem;">
                         <div class="tech-stacks-header">
                             <h4>🛠️ 보유 기술 스택</h4>
-                            <button id="edit-tech-stacks-btn" class="btn btn--ghost">수정</button>
                         </div>
                         <div id="tech-stack-list" class="tech-stack-list"></div>
                     </div>

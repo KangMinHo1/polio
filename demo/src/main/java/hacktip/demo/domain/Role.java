@@ -12,7 +12,6 @@ import java.util.stream.Stream;
 public enum Role {
     JOB_SEEKER("ROLE_JOB_SEEKER", "취준생"),
     INCUMBENT("ROLE_INCUMBENT", "재직자"),
-    MENTOR("ROLE_MENTOR", "멘토"),
     ADMIN("ROLE_ADMIN", "관리자");
 
     private final String key;

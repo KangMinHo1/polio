@@ -5,11 +5,12 @@ BEGIN
     FOR t IN (
         SELECT table_name FROM user_tables 
         WHERE table_name IN (
-            -- [수정] POST_CATEGORY 삭제됨, CATEGORY 포함
+            -- [수정] POST_CATEGORY도 확실히 삭제 목록에 포함
+            'POST_CATEGORY', 'CATEGORY',
             'MEMBER_STACK', 'TECH_STACK',
             'POST_LIKES', 'POST_COMMENT', 'POST', 
             'CHAT_MESSAGE', 'CHATROOM_MEMBER', 
-            'CHATROOM', 'MEMBERS', 'REFRESH_TOKENS', 'CATEGORY'
+            'CHATROOM', 'MEMBERS', 'REFRESH_TOKENS'
         )
     ) LOOP
         EXECUTE IMMEDIATE 'DROP TABLE ' || t.table_name || ' CASCADE CONSTRAINTS';
@@ -64,13 +65,21 @@ CREATE TABLE TECH_STACK (
 
 CREATE SEQUENCE SEQ_TECH_STACK START WITH 1 INCREMENT BY 1;
 
--- 기술 스택 초기 데이터
+-- [핵심 기술 스택 14개]
 INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Java');
-INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Spring Boot');
 INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Python');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'JavaScript');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'TypeScript');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Spring Boot');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Node.js');
 INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'React');
 INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Vue.js');
 INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Oracle');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'MySQL');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'MongoDB');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'AWS');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Git');
+INSERT INTO TECH_STACK (StackId, StackName) VALUES (SEQ_TECH_STACK.NEXTVAL, 'Docker');
 COMMIT;
 
 ------------------------------------------------------------
@@ -90,7 +99,7 @@ CREATE TABLE MEMBER_STACK (
 CREATE SEQUENCE SEQ_MEMBER_STACK START WITH 1 INCREMENT BY 1;
 
 ------------------------------------------------------------
--- 2. CATEGORY 테이블 (게시판 카테고리 관리) - [순서 변경: POST보다 먼저 생성]
+-- 2. CATEGORY 테이블 (구 POST_CATEGORY 대체)
 ------------------------------------------------------------
 CREATE TABLE CATEGORY (
     CategoryId NUMBER PRIMARY KEY,
@@ -99,7 +108,8 @@ CREATE TABLE CATEGORY (
 
 CREATE SEQUENCE SEQ_CATEGORY START WITH 1 INCREMENT BY 1;
 
--- 카테고리 초기 데이터
+-- 카테고리 데이터
+INSERT INTO CATEGORY (CategoryId, CategoryName) VALUES (SEQ_CATEGORY.NEXTVAL, '공지');
 INSERT INTO CATEGORY (CategoryId, CategoryName) VALUES (SEQ_CATEGORY.NEXTVAL, '질문');
 INSERT INTO CATEGORY (CategoryId, CategoryName) VALUES (SEQ_CATEGORY.NEXTVAL, '자유');
 INSERT INTO CATEGORY (CategoryId, CategoryName) VALUES (SEQ_CATEGORY.NEXTVAL, '프로젝트');
@@ -107,12 +117,12 @@ INSERT INTO CATEGORY (CategoryId, CategoryName) VALUES (SEQ_CATEGORY.NEXTVAL, '�
 COMMIT;
 
 ------------------------------------------------------------
--- 3. POST 테이블 ([수정] CategoryId 외래키 추가)
+-- 3. POST 테이블
 ------------------------------------------------------------
 CREATE TABLE POST (
     PostId NUMBER PRIMARY KEY,
     MemberId NUMBER NOT NULL,
-    CategoryId NUMBER NOT NULL, -- [추가] 1개의 카테고리만 참조
+    CategoryId NUMBER NOT NULL,
     Title VARCHAR2(200 CHAR) NOT NULL,
     Content CLOB NOT NULL,
     ViewCount NUMBER DEFAULT 0,
@@ -120,7 +130,6 @@ CREATE TABLE POST (
     GithubUrl VARCHAR2(500 CHAR),
     
     CONSTRAINT fk_post_member FOREIGN KEY (MemberId) REFERENCES MEMBERS(MemberId),
-    -- [추가] 카테고리 외래키 제약조건
     CONSTRAINT fk_post_category FOREIGN KEY (CategoryId) REFERENCES CATEGORY(CategoryId)
 );
 
@@ -233,4 +242,3 @@ CREATE TABLE REFRESH_TOKENS (
     TOKEN_VALUE VARCHAR2(512) NOT NULL, 
     CONSTRAINT PK_REFRESH_TOKENS PRIMARY KEY (USER_EMAIL)
 );
-

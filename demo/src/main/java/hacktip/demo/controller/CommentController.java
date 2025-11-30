@@ -9,10 +9,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -20,6 +22,13 @@ import java.util.List;
 public class CommentController {
 
     private final CommentService commentService;
+
+    @GetMapping("/comments")
+    public ResponseEntity<List<CommentResponseDto>> getAllComments(){
+        List<CommentResponseDto> comments = commentService.findAll();
+
+        return ResponseEntity.ok(comments);
+    }
 
     /**
      * 특정 게시글의 모든 댓글 조회 API
@@ -39,11 +48,10 @@ public class CommentController {
     public ResponseEntity<String> createComment(
             @PathVariable Long postId,
             @Valid @RequestBody CommentRequestDto requestDto,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        // 현재 로그인한 사용자의 ID를 가져옴
-        String email = userDetails.getMember().getEmail();
-
+        // [수정] getMember()를 통하지 않고 UserDetails의 표준 메서드인 getUsername()을 사용하여 이메일을 가져옵니다.
+        String email = userDetails.getUsername();
         commentService.createComment(postId, email, requestDto);
 
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -57,11 +65,10 @@ public class CommentController {
     @DeleteMapping("/comments/{commentId}")
     public ResponseEntity<String> deleteComment(
             @PathVariable Long commentId,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
-        // 현재 로그인한 사용자의 ID를 가져옴
-        String email = userDetails.getMember().getEmail();
-
+        // [수정] getMember()를 통하지 않고 UserDetails의 표준 메서드인 getUsername()을 사용하여 이메일을 가져옵니다.
+        String email = userDetails.getUsername();
         try {
             commentService.deleteComment(commentId, email);
             return ResponseEntity.ok("댓글이 성공적으로 삭제되었습니다.");

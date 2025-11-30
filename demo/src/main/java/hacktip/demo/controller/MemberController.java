@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,17 +22,19 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api")
 public class MemberController {
 
     private final MemberService memberService;
 
-    // 회원가입
+    //회원가입
     @PostMapping("/signup")
     public ResponseEntity<MemberSignUpResponseDto> signUp(@Valid @RequestBody MemberSignUpRequestDto request){
         MemberSignUpResponseDto memberSignUpResponseDto = memberService.signUp(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(memberSignUpResponseDto);
     }
+
 
     //로그인
     @PostMapping("/login")
@@ -46,14 +49,14 @@ public class MemberController {
         return ResponseEntity.ok(new TokenResponseDto(tokenInfo.getAccessToken())); //200 OK와 함께 토큰 응답
     }
 
-    // 3. === [로그아웃 엔드포인트 추가] ===
+
     /**
      * 로그아웃
      * (DB에서 RT 삭제 + 브라우저의 RT 쿠키 만료)
      */
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetailsImpl userDetails, HttpServletResponse response){
-        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
+    public ResponseEntity<String> logout(@AuthenticationPrincipal UserDetails userDetails, HttpServletResponse response){
+        String email = userDetails.getUsername();
 
         // 1. (DB) 서비스 호출하여 DB에서 Refresh Token 삭제
         memberService.logout(email);
@@ -68,10 +71,31 @@ public class MemberController {
 
     //자신의 정보 요청
     @GetMapping("/me")
-    public ResponseEntity<ResponseUserDataDto> getMe(@AuthenticationPrincipal UserDetailsImpl userDetails){
+    public ResponseEntity<ResponseUserDataDto> getMe(@AuthenticationPrincipal UserDetails userDetails){
         // 서비스 계층에 UserDetails를 전달하여 사용자 정보를 조회합니다.
-        ResponseUserDataDto responseDto = memberService.getCurrentUser(userDetails);
+        ResponseUserDataDto responseDto = memberService.getCurrentUser((UserDetailsImpl) userDetails);
         return ResponseEntity.ok(responseDto);
+    }
+
+    //사용자 이름으로 기술스택 가져오기
+    @GetMapping("/members/{userName}/stacks")
+    public ResponseEntity<List<String>> getStacksByUserName(@PathVariable String userName){
+        List<String> stacks = memberService.getStacksByUserName(userName);
+        return ResponseEntity.ok(stacks);
+    }
+
+    //모든 유저 정보 일부 가져오기
+    @GetMapping("/users") // 최종 URL: /api/users
+    public ResponseEntity<List<ResponseUserDataDto>> getAllUsers() {
+        List<ResponseUserDataDto> users = memberService.findAllUsers();
+        return ResponseEntity.ok(users);
+    }
+
+    //자신의 기술 스택 갱신
+    @PutMapping("/members/me/stacks")
+    public ResponseEntity<Void> updateMemberStacks(@AuthenticationPrincipal UserDetails userDetails, @RequestBody UpdateMemberStacksDto request) {
+        memberService.updateMemberStacks(userDetails.getUsername(), request.getStackNames());
+        return ResponseEntity.ok().build();
     }
 
 

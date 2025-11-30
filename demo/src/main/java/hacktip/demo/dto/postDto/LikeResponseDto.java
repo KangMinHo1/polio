@@ -1,13 +1,14 @@
 package hacktip.demo.dto.postDto;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
+@AllArgsConstructor
 public class LikeResponseDto {
 
-    private int likes;
+    private int likesCount;
+    private boolean isLiked;
 
-    public LikeResponseDto(int likes) {
-        this.likes = likes;
-    }
+
 }

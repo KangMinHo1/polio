@@ -26,22 +26,23 @@ public class ChatRoomService {
     /**
      * (기존 createChatRoom 메서드를 삭제하고, 이 메서드로 대체합니다)
      * 1대1 채팅방 "찾기 또는 생성"
-     * * @param myEmail     (인증된 사용자 이메일)
-     * @param targetEmail (채팅 상대방 이메일)
+     * @param myMemberId     (인증된 사용자 ID)
+     * @param targetMemberId (채팅 상대방 ID)
      * @return ChatRoomResponseDto (찾거나 생성된 채팅방 정보)
      */
     @Transactional
-    public ChatRoomResponseDto findOrCreate1on1Room(String myEmail, String targetEmail){
-        // 0. (예외 처리) 자기 자신과의 채팅방 생성 금지
-        if(myEmail.equals(targetEmail)){
-            throw new IllegalArgumentException("자기 자신과는 1대1 채팅을 할 수 없습니다.");
-        }
+    public ChatRoomResponseDto findOrCreate1on1Room(Long myMemberId, Long targetMemberId){
 
         // 1. (A) '나'와 '상대방'의 Member 엔티티 조회
-        Member myMember = memberRepository.findByEmail(myEmail)
-                .orElseThrow(()-> new IllegalArgumentException("존재하지 않는 사용자입니다: " + myEmail));
-        Member targetMember = memberRepository.findByEmail(targetEmail)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다: " + targetEmail));
+        Member myMember = memberRepository.findById(myMemberId)
+                .orElseThrow(()-> new IllegalArgumentException("존재하지 않는 사용자입니다: " + myMemberId));
+        Member targetMember = memberRepository.findById(targetMemberId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다: " + targetMemberId));
+
+        // 0. (예외 처리) 자기 자신과의 채팅방 생성 금지
+        if(myMemberId.equals(targetMemberId)){
+            throw new IllegalArgumentException("자기 자신과는 1대1 채팅을 할 수 없습니다.");
+        }
 
         // 2. (B) "Find" (1대1 채팅방 검색)
         //    (B)에서 추가한 JPQL 쿼리 사용
@@ -76,18 +77,13 @@ public class ChatRoomService {
     // 3. === [신규] '내 채팅방' 목록 조회 ===
     /**
      * 인증된 사용자(email)가 속한 모든 채팅방 목록을 조회
-     * @param email (인증된 사용자 이메일)
+     * @param memberId (인증된 사용자 ID)
      * @return List<ChatRoomResponseDto>
      */
     @Transactional // (읽기 전용이지만, Lazy Loading을 위해 @Transactional 사용)
-    public List<ChatRoomResponseDto> findMyChatRooms(String email){
-
-        // 1. 이메일로 Member 엔티티 조회
-        Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
-
+    public List<ChatRoomResponseDto> findMyChatRooms(Long memberId){
         // 2. (A)에서 추가한 메서드를 사용해, 해당 멤버가 속한 ChatRoomMember 리스트 조회
-        List<ChatRoomMember> myChatRoomMembers = chatRoomMemberRepository.findByMember_MemberId(member.getMemberId());
+        List<ChatRoomMember> myChatRoomMembers = chatRoomMemberRepository.findByMember_MemberId(memberId);
 
         // 3. (Stream) ChatRoomMember 리스트에서 ChatRoom 엔티티만 추출
         return myChatRoomMembers.stream()

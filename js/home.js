@@ -1,179 +1,176 @@
-/**
- * home.js (mainview.html의 스크립트)
- * 홈페이지의 동적 기능을 담당합니다.
- */
 document.addEventListener('DOMContentLoaded', async () => {
+  // shared.js에서 app 초기화를 기다립니다.
   await window.APP_INITIALIZATION;
-
   const app = window.CommunityApp;
 
-  function renderProfileSummary() {
-    const card = document.getElementById('profile-summary-card');
-    const userText = document.getElementById('profile-welcome-user');
-    const profileButton = document.getElementById('profile-goto-button');
-    
-    if (app.state.user && card && userText && profileButton) {
-      userText.textContent = `(${app.state.user.role}) ${app.state.user.name}님`;
-      profileButton.href = `profile.html?user=${encodeURIComponent(app.state.user.name)}`;
-      card.style.display = 'block';
-    } else if (card) {
-      card.style.display = 'none';
+  /**
+   * 서버에 인기 기술 스택 통계를 요청하는 함수
+   * @returns {Promise<Array<{stackName: string, userCount: number}>>}
+   */
+  async function fetchPopularTechStacks() {
+    try {
+      // app.api.get은 shared.js에 정의된 API 호출 함수로 가정합니다.
+      const techData = await app.api.fetchPopularTechStacks();
+      return techData || []; // 데이터가 null일 경우 빈 배열 반환
+
+    } catch (error) {
+      console.error('인기 기술 스택 데이터를 불러오는 데 실패했습니다:', error);
+      app.utils.showNotification('인기 기술 스택 정보를 가져오는 데 실패했습니다.', 'error');
+      // 에러 발생 시 빈 배열을 반환하여 차트가 비어있도록 합니다.
+      return [];
     }
   }
 
-  function renderPopularPosts() {
-    const popularPostList = document.querySelector('.card-grid--solid');
-    if (!popularPostList) return;
-    const topPostsByLikes = [...app.state.posts]
-      .filter(post => post.category !== '공지') // ✅ [수정] 케이스 스터디 필터 제거
-      .sort((a, b) => (b.likes || 0) - (a.likes || 0))
-      .slice(0, 4);
-    if (topPostsByLikes.length === 0) {
-        popularPostList.innerHTML = `<p style="grid-column: 1 / -1; color: var(--text-secondary); text-align: center; padding: 1rem;">인기 포트폴리오가 없습니다.</p>`;
-        return;
-    }
-    popularPostList.innerHTML = topPostsByLikes.map(post => `
-      <a href="posts.html#post-${post.id}" class="grid-item" title="${post.title}">${post.title}</a>
-    `).join('');
-  }
-  
-  function renderLatestNotices() {
-    const noticeList = document.getElementById('notice-list');
-    if (!noticeList) return;
-    // ✅ [수정] post.categories 배열에 '공지'가 포함되어 있는지 확인합니다.
-    const notices = app.state.posts.filter(post => post.categories && post.categories.includes('공지'));
-    const latestNotices = notices
-        .sort((a, b) => b.createdAt - a.createdAt)
-        .slice(0, 5);
-    if (latestNotices.length === 0) {
-        noticeList.innerHTML = `<li style="padding: 0.75rem; color: var(--text-secondary);">공지사항이 없습니다.</li>`;
-        return;
-    }
-    noticeList.innerHTML = latestNotices.map((notice, index) => `
-      <a href="posts.html#post-${notice.id}" style="text-decoration: none; color: inherit;">
-        <li class="notice-item ${index < 2 ? 'is-important' : ''}">
-          <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${notice.title}">${notice.title}</div>
-          <div class="notice-date" style="flex-shrink: 0;">${app.utils.formatDate(notice.createdAt)}</div>
-        </li>
-      </a>
-    `).join('');
-  }
+  /**
+   * 인기 기술 스택 차트를 생성하고 렌더링하는 함수
+   * @param {Array<{stackName: string, userCount: number}>} techData - 기술 스택 데이터
+   */
+  function renderTechStackChart(techData) {
+    const ctx = document.getElementById('home-popular-tech-chart');
+    if (!ctx) return;
 
-  function renderImportantPosts() {
-    const importantPostList = document.getElementById('home-important-post-list');
-    if (!importantPostList) return;
-    const importantPosts = app.state.posts.filter(post => post.isImportant === true && post.categories && !post.categories.includes('공지'));
-    const latestImportantPosts = importantPosts
-        .sort((a, b) => b.createdAt - a.createdAt)
-        .slice(0, 5);
-    if (latestImportantPosts.length === 0) {
-      importantPostList.innerHTML = `<li style="padding: 1rem 0; color: var(--text-secondary);">추천 포트폴리오가 없습니다.</li>`;
+    if (!techData || techData.length === 0) {
+      const cardContent = ctx.parentElement;
+      cardContent.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">인기 기술 스택 데이터가 없습니다.</p>';
       return;
     }
-    importantPostList.innerHTML = latestImportantPosts.map(post => {
-      const authorInfo = app.state.users.find(u => u.name === post.author);
-      const authorCategory = authorInfo ? authorInfo.role : '사용자';
-      return `
-        <li class="post-item" data-post-id="${post.id}" onclick="location.href='posts.html#post-${post.id}'">
-          <div class="post-item-title">[${post.category}] ${post.title}</div>
-          <div class="post-item-meta">
-            <span>(${authorCategory}) ${post.author}</span> •
-            <span>${app.utils.formatDate(post.createdAt)}</span> •
-            <span>조회 ${post.views || 0}</span>
-          </div>
-        </li>
-      `;
-    }).join('');
+
+    // 서버 응답(PopularTechStackDto)의 userCount 필드를 기준으로 내림차순 정렬하고 상위 6개만 사용합니다.
+    const sortedData = techData.sort((a, b) => b.userCount - a.userCount).slice(0, 6);
+
+    // 서버 응답(PopularTechStackDto)의 stackName 필드를 차트 라벨로 사용합니다.
+    const labels = sortedData.map(item => item.stackName);
+    // 서버 응답(PopularTechStackDto)의 userCount 필드를 차트 데이터로 사용합니다.
+    const data = sortedData.map(item => item.userCount);
+
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '사용자 수',
+          data: data,
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.7)',
+            'rgba(54, 162, 235, 0.7)',
+            'rgba(255, 206, 86, 0.7)',
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(153, 102, 255, 0.7)',
+            'rgba(255, 159, 64, 0.7)'
+          ],
+          borderColor: [
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+          },
+        }
+      }
+    });
   }
-  
+
+  /**
+   * 로그인한 사용자의 프로필 요약 정보를 렌더링하는 함수
+   */
+  function renderProfileSummary() {
+    const profileCard = document.getElementById('profile-summary-card');
+    if (!profileCard) return;
+
+    const user = app.state.user;
+    if (user) {
+      const userNameEl = document.getElementById('profile-user-name');
+      const userRoleEl = document.getElementById('profile-user-role');
+      const profileButton = document.getElementById('profile-goto-button');
+
+      if (userNameEl) userNameEl.textContent = user.name;
+      if (userRoleEl) {
+        // ✅ [수정] '일반회원'으로 고정하는 대신, 서버에서 받은 사용자 역할(role)을 그대로 표시합니다.
+        userRoleEl.textContent = user.role;
+      }
+      // ✅ [수정] '내 프로필 보기' 버튼의 링크에 현재 로그인한 사용자의 이름을 파라미터로 추가합니다.
+      if (profileButton) profileButton.href = `profile.html?user=${encodeURIComponent(user.name)}`;
+
+      profileCard.style.display = 'block';
+    } else {
+      profileCard.style.display = 'none';
+    }
+  }
+
+  /**
+   * 최신 피드백 요청 목록을 렌더링하는 함수
+   */
   function renderLatestPosts() {
     const postList = document.getElementById('home-post-list');
     if (!postList) return;
-    const latestPosts = app.state.posts
-        .filter(post => post.categories && !post.categories.includes('공지'))
-        .sort((a, b) => b.createdAt - a.createdAt)
-        .slice(0, 5);
+
+    // app.state.posts에서 최신순으로 정렬 후 상위 5개만 가져옵니다.
+    const latestPosts = [...app.state.posts]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5);
+
     if (latestPosts.length === 0) {
-        postList.innerHTML = `<li style="padding: 1rem 0; color: var(--text-secondary);">최신 피드백 요청이 없습니다.</li>`;
-        return;
+      postList.innerHTML = '<li><p style="text-align: center; color: var(--text-secondary);">아직 등록된 피드백 요청이 없습니다.</p></li>';
+      return;
     }
-    postList.innerHTML = latestPosts.map(post => {
-      const authorInfo = app.state.users.find(u => u.name === post.author);
-      const authorCategory = authorInfo ? authorInfo.role : '사용자';
-      return `
-        <li class="post-item" data-post-id="${post.id}" onclick="location.href='post-detail.html?id=${post.id}'">
-          <div class="post-item-title">[${post.category}] ${post.title}</div>
-          <div class="post-item-meta">
-            <span>(${authorCategory}) ${post.author}</span> •
-            <span>${app.utils.formatDate(post.createdAt)}</span> •
-            <span>조회 ${post.views || 0}</span>
+
+    postList.innerHTML = latestPosts.map(post => `
+      <li class="post-item">
+        <a href="post-detail.html?id=${post.id}" class="post-item-link" style="text-decoration: none;">
+          <div class="post-item-header">
+            <span class="post-item-category">${post.category}</span>
+            <h4 class="post-item-title">${post.title}</h4>
           </div>
-        </li>
-      `;
-    }).join('');
+          <div class="post-item-meta">
+            <span>${post.author}</span>
+            <span>${app.utils.formatDate(post.createdAt)}</span>
+          </div>
+        </a>
+      </li>
+    `).join('');
   }
-  
-  // ✅ [추가] 인기 기술 스택 차트 렌더링 함수
-  async function renderTrendChart() {
-    const techCtx = document.getElementById('home-popular-tech-chart');
-    if (!techCtx) return;
 
-    try {
-      // 서버 통신 오류로 인해 임시 비활성화
-      const trends = { popularTechStacks: [] }; // await app.api.calculatePortfolioTrends();
-      const techData = trends.popularTechStacks;
+  /**
+   * 최신 공지사항 목록을 렌더링하는 함수
+   */
+  function renderNotices() {
+    const noticeList = document.getElementById('notice-list');
+    if (!noticeList) return;
 
-      if (techData && techData.length > 0) {
-        new Chart(techCtx, {
-          type: 'bar',
-          data: {
-            labels: techData.map(item => item.key),
-            datasets: [{
-              label: '언급 횟수',
-              data: techData.map(item => item.value),
-              backgroundColor: [
-                'rgba(255, 99, 132, 0.5)',
-                'rgba(54, 162, 235, 0.5)',
-                'rgba(255, 206, 86, 0.5)',
-                'rgba(75, 192, 192, 0.5)',
-                'rgba(153, 102, 255, 0.5)',
-              ],
-              borderWidth: 1
-            }]
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-              legend: { display: false },
-              title: { display: false }
-            },
-            scales: {
-              x: {
-                beginAtZero: true,
-                ticks: { stepSize: 1 }
-              }
-            }
-          }
-        });
-      } else {
-        techCtx.parentElement.innerHTML = '<p>아직 데이터가 충분하지 않습니다.</p>';
-      }
-    } catch (error) {
-      console.error("Error rendering trend chart:", error);
-      techCtx.parentElement.innerHTML = '<p>차트 로딩에 실패했습니다.</p>';
+    // app.state.posts에서 카테고리가 '공지'인 게시글을 최신순으로 정렬 후 상위 3개만 가져옵니다.
+    const latestNotices = [...app.state.posts]
+      .filter(post => post.category === '공지')
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 3);
+
+    if (latestNotices.length === 0) {
+      noticeList.innerHTML = '<li><p style="text-align: center; color: var(--text-secondary);">등록된 공지사항이 없습니다.</p></li>';
+      return;
     }
+
+    noticeList.innerHTML = latestNotices.map(notice => `
+      <li class="notice-item">
+        <a href="post-detail.html?id=${notice.id}" class="notice-item-link">${notice.title}</a>
+      </li>
+    `).join('');
   }
 
-  function initializeHomePage() {
-    renderProfileSummary();
-    renderPopularPosts();
-    renderLatestNotices();
-    renderImportantPosts();
-    renderLatestPosts();    
-    renderTrendChart(); // ✅ 차트 렌더링 함수 호출
-  }
-
-  initializeHomePage();
+  // 함수 실행
+  // ✅ [수정] 로그인 상태와 관계없이 항상 API를 호출합니다.
+  renderProfileSummary(); // 프로필 요약 카드 렌더링
+  const popularTechs = await fetchPopularTechStacks();
+  renderTechStackChart(popularTechs);
+  renderLatestPosts(); // 최신 피드백 요청 목록 렌더링 함수 호출
+  renderNotices(); // 최신 공지사항 목록 렌더링 함수 호출
 });

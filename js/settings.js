@@ -47,8 +47,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function setMyPostsLink() {
         if (myPostsButton) { 
-            // ✅ user.name -> user.id
-            const currentUser = app.state.user.id; 
+            // ✅ user.id -> user.name
+            const currentUser = app.state.user.name; 
             myPostsButton.href = `posts.html?author=${encodeURIComponent(currentUser)}`;
         }
     }

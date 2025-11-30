@@ -3,21 +3,24 @@ package hacktip.demo.service;
 import hacktip.demo.domain.Member;
 import hacktip.demo.domain.post.Category;
 import hacktip.demo.domain.post.Post;
+import hacktip.demo.dto.CategoryPostCountDto;
 import hacktip.demo.dto.postDto.PostCreateRequestDto;
 import hacktip.demo.dto.postDto.PostResponseDto;
 import hacktip.demo.dto.postDto.PostSimpleResponseDto;
 import hacktip.demo.dto.postDto.PostUpdateRequestDto;
 import hacktip.demo.repository.CategoryRepository;
 import hacktip.demo.repository.MemberRepository;
+import hacktip.demo.repository.PostLikeRepository;
 import hacktip.demo.repository.PostRepository;
-import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityNotFoundException;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +30,7 @@ public class PostService {
     private final MemberRepository memberRepository;
 
     private final CategoryRepository categoryRepository;
+    private final PostLikeRepository postLikeRepository;
 
     /**
      * 1. 게시물 생성
@@ -54,7 +58,8 @@ public class PostService {
         Post savedPost = postRepository.save(post);
 
 
-        return new PostResponseDto(savedPost);
+        // 생성 시점에는 '좋아요'를 누르지 않았으므로 isLiked는 항상 false
+        return new PostResponseDto(savedPost, false);
     }
 
     /**
@@ -77,17 +82,22 @@ public class PostService {
      * 3. 게시물 상세 조회 (+ 조회수 1 증가)
      */
     @Transactional
-    public PostResponseDto getPostById(Long postId){
+    public PostResponseDto getPostById(Long postId, String email){
 
-        // 1. (조회) PK로 게시물 조회 (없으면 404 예외)
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 Id의 게시물이 없습니다. postId : " + postId));
 
-        // 2. (로직) 조회수 1 증가 (Dirty Checking)
+        // '좋아요' 여부는 로그인한 사용자(email != null)에 한해서만 확인합니다.
+        // Optional을 활용하여 email과 member가 모두 존재할 경우에만 '좋아요' 상태를 조회합니다.
+        boolean isLiked = memberRepository.findByEmail(email)
+                .map(member -> postLikeRepository.existsByPost_PostIdAndMember_MemberId(postId, member.getMemberId()))
+                .orElse(false); // 사용자가 없거나 비로그인 상태이면 false
+
+        // 조회수 1 증가 (Dirty Checking)
         post.increaseViewCount();
 
-        // 3. (변환) Post -> PostResponseDto (content 포함)
-        return new PostResponseDto(post);
+        // Post -> PostResponseDto 변환 (isLiked 상태와 함께)
+        return new PostResponseDto(post, isLiked);
     }
 
 
@@ -104,7 +114,7 @@ public class PostService {
 
         // 2. (인증) 토큰의 email로 사용자(Member) 조회
         Member requestingMember = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다,"));
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
         Category category = categoryRepository.findByCategoryName(requestDto.getCategory())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
@@ -118,13 +128,16 @@ public class PostService {
         // --- (인가 통과) ---
         post.update(requestDto.getTitle(), requestDto.getContent(), category);
 
-        return new PostResponseDto(post);
+        // 수정 후 '좋아요' 상태는 변하지 않으므로, 현재 상태를 다시 조회하여 DTO 생성
+        boolean isLiked = postLikeRepository.existsByPost_PostIdAndMember_MemberId(postId, requestingMember.getMemberId());
+        return new PostResponseDto(post, isLiked);
     }
 
     /**
      * 5. 게시물 삭제
      * (삭제 권한이 있는지 "인가" 검사 포함)
      */
+    @Transactional
     public void deletePost(Long postId, String email){
 
         // 1. (조회) 삭제할 게시물 조회
@@ -136,9 +149,11 @@ public class PostService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
 
-        // 3. (핵심: 인가) "요청한 사용자"와 "게시물 작성자"가 일치하는지 검사
-        if(!post.getMember().getMemberId().equals(requestingMember.getMemberId())){
-            // 4. (실패) 일치하지 않으면 "접근 거부(403)" 예외 발생
+        // 3. (핵심: 인가) "요청한 사용자"가 '게시물 작성자'도 아니고 '관리자'도 아닌지 검사
+        boolean isAuthor = post.getMember().getMemberId().equals(requestingMember.getMemberId());
+        boolean isAdmin = requestingMember.getRole() == hacktip.demo.domain.Role.ADMIN;
+
+        if (!isAuthor && !isAdmin) { // 작성자도 아니고, 관리자도 아니면
             throw new AccessDeniedException("이 게시물을 삭제할 권한이 없습니다.");
         }
 
@@ -164,6 +179,16 @@ public class PostService {
 
         // 3. (변환) List<Post> -> List<PostSimpleResponseDto>
         return posts.stream().map(PostSimpleResponseDto::new).collect(Collectors.toList());
+    }
+
+    /**
+     * [신규] 카테고리별 게시물 수 통계 조회
+     * @return 카테고리 이름과 게시물 수를 담은 DTO 리스트
+     */
+    @Transactional(readOnly = true)
+    public List<CategoryPostCountDto> getPostCountByCategory() {
+        // 2단계에서 만든 Repository 메서드를 그대로 호출하여 결과를 반환합니다.
+        return postRepository.countPostsByCategory();
     }
 
 }

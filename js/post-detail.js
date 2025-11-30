@@ -1,7 +1,3 @@
-/**
- * post-detail.js
- * 게시글 상세 페이지의 동적 기능을 담당합니다.
- */
 document.addEventListener('DOMContentLoaded', async () => {
     await window.APP_INITIALIZATION;
     const app = window.CommunityApp;
@@ -12,22 +8,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const urlParams = new URLSearchParams(window.location.search);
-    const postId = parseInt(urlParams.get('id'), 10); //게시글 PK 문자열 -> 숫자로 변환
+    const postId = parseInt(urlParams.get('id'), 10);
 
-    if (!postId || isNaN(postId)) { // 게시글 pk가 없으면 오류
+    if (!postId || isNaN(postId)) {
         elements.container.innerHTML = '<p>잘못된 접근입니다. 게시글 ID가 없습니다.</p>';
         return;
     }
 
-    
     let post;
+    let originalPostData;
     try {
-        post = await app.api.fetchPostById(postId); // 서버에 해당 게시글에 내용 요청
-        // 서버 DTO 필드명을 프론트엔드에서 사용하는 필드명으로 변환.
-        post.createdAt = post.createDate;
-        post.portfolioLink = post.githubUrl;
-        // ✅ [수정] 좋아요 수도 필드명을 변환해줍니다. (likesCount -> likes) - 이전에 적용되었어야 할 코드입니다.
-        post.likes = post.likesCount; 
+        originalPostData = await app.api.fetchPostById(postId);
+
+        // 서버 응답 데이터를 프론트엔드 모델로 변환합니다.
+        post = {
+            id: originalPostData.id,
+            title: originalPostData.title,
+            content: originalPostData.content,
+            author: originalPostData.author,
+            views: originalPostData.views,
+            likes: originalPostData.likesCount,
+            createdAt: originalPostData.createDate,
+            category: originalPostData.category,
+            portfolioLink: originalPostData.githubUrl,
+            isLiked: originalPostData.isLiked
+        };
     } catch (error) {
         console.error("Failed to fetch post:", error);
         elements.container.innerHTML = `<p>${error.message || '게시글을 불러오는 데 실패했습니다.'}</p>`;
@@ -39,9 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    //함수 정의
-    
-    //게시글이나 댓글의 작성자 이름을 클릭했을 때, 해당 사용자의 프로필 페이지로 이동시켜주는 기능
+    // 작성자 이름 클릭 시 프로필 페이지로 이동합니다.
     function handleAuthorClick(e) {
         const authorId = e.target.dataset.authorId;
         if (!authorId) return;
@@ -54,18 +57,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const content = contentEl.value.trim();
         if (!content) return;
 
-        // ✅ [수정] postId는 첫 번째 인자로, 요청 본문에는 백엔드 DTO와 일치하는 'contents' 필드명으로 전달합니다.
-        // 백엔드가 생성된 댓글 객체를 반환하지 않으므로, 반환값을 사용하지 않습니다.
         await app.api.createComment(post.id, { contents: content });
         
-        // 멘션 알림 기능은 생성된 댓글의 ID가 필요하므로, 댓글 목록을 다시 불러온 후에 처리해야 합니다. (일단 주석 처리)
-        // await app.utils.parseMentionsAndCreateNotifications(content, `post-detail.html?id=${post.id}#comment-???`, currentUser);
-        
         contentEl.value = '';
-        loadComments(post); // Re-load comments
+        loadComments(post);
     }
 
-    // 댓글 삭제 핸들러
     async function handleDeleteComment(commentId) {
         if (confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
             try {
@@ -78,7 +75,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 댓글 수정 UI 토글 핸들러
     function handleEditComment(commentId, currentContent) {
         const commentItem = document.getElementById(`comment-${commentId}`);
         const contentWrapper = commentItem.querySelector('.comment-content-wrapper');
@@ -116,20 +112,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!commentList) return;
         
         const commentsFromServer = await app.api.fetchComments(post.id);
-        // ✅ [수정] 백엔드 DTO 필드명을 프론트엔드에서 사용하는 필드명으로 변환합니다.
         const comments = commentsFromServer.map(c => ({
             id: c.commentId,
             content: c.contents,
             authorName: c.authorName,
             createdAt: c.createDate,
-            isBest: c.isBest || false // isBest 필드가 없을 경우를 대비
+            isBest: c.isBest || false
         }));
 
-        // ✅ [수정] currentUser.id 대신 currentUser.name과 비교합니다.
         const isPostAuthor = currentUser && currentUser.name === post.author;
 
         commentList.innerHTML = comments.length > 0 ? comments.map(comment => {
-            const isCommentAuthor = currentUser && currentUser.name === comment.authorName; // ✅ [수정] comment.author -> comment.authorName
+            const isCommentAuthor = currentUser && currentUser.name === comment.authorName;
             let authorActions = '';
             if (isCommentAuthor) {
                 authorActions = `
@@ -151,26 +145,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
         }).join('') : '<li>아직 댓글이 없습니다.</li>';
 
-        // 이벤트 리스너 동적 바인딩
         commentList.querySelectorAll('.comment-author').forEach(el => el.addEventListener('click', handleAuthorClick));
         commentList.querySelectorAll('.btn-delete-comment').forEach(btn => btn.addEventListener('click', () => handleDeleteComment(parseInt(btn.dataset.commentId))));
         commentList.querySelectorAll('.btn-edit-comment').forEach(btn => btn.addEventListener('click', () => handleEditComment(parseInt(btn.dataset.commentId), unescape(btn.dataset.commentContent))));
     }
 
-    // --- 상세 페이지 렌더링 함수 ---
     async function renderPostDetail() {
 
-        // ✅ [개선] post.author 이름을 사용해 전체 사용자 목록(app.state.users)에서 역할(role) 정보를 찾습니다.
         const authorInfo = app.state.users.find(u => u.name === post.author);
-        const authorCategory = authorInfo ? authorInfo.role : '사용자';
+        const authorCategory = authorInfo ? authorInfo.role : '사용자'; // 작성자 역할(role) 정보
 
         let portfolioLinkHTML = '';
         if (post.portfolioLink) {
             portfolioLinkHTML = `<a href="${post.portfolioLink.startsWith('http') ? post.portfolioLink : 'http://' + post.portfolioLink}" class="btn btn--primary" target="_blank" rel="noopener noreferrer" style="margin-bottom: 1.5rem; display: inline-block;">🔗 포트폴리오/이력서 보러가기</a>`;
-        }
-        let fileAttachmentHTML = '';
-        if (post.file && post.file.name && post.file.content) {
-            fileAttachmentHTML = `<div class="post-attachment"><div class="post-attachment-title">📎 첨부파일</div><a href="${post.file.content}" download="${post.file.name}" class="post-attachment-link">${post.file.name} 다운로드</a></div>`;
         }
         const authorHTML = `<span class="post-author-link" data-author-id="${post.author}" title="클릭해서 프로필 보기">(${authorCategory}) ${post.author}</span>`;
 
@@ -184,20 +171,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         let postActionsHTML = '';
-        let bookmarkButtonHTML = '';
-        if (currentUser) {
-            const isBookmarked = post.bookmarkedBy && post.bookmarkedBy.includes(currentUser.id);
-            bookmarkButtonHTML = `<button id="btn-bookmark" class="btn btn--ghost btn-bookmark ${isBookmarked ? 'is-active' : ''}" data-post-id="${post.id}">${isBookmarked ? '📌 스크랩 취소' : '📌 스크랩하기'}</button>`;
-        }
-        // ✅ [수정] 사용자별로 '좋아요' 목록을 관리하기 위해 키에 사용자 이름을 추가합니다.
-        const likedPostIds = currentUser ? JSON.parse(localStorage.getItem(`likedPostIds_${currentUser.name}`) || '[]') : [];
-        const hasLiked = likedPostIds.includes(postId);
-        // ✅ [수정] 케이스 스터디 제거, '좋아요' 버튼으로 통일
-        postActionsHTML = `<button id="like-button-${post.id}" class="btn ${hasLiked ? 'btn--primary' : ''}">❤️ 좋아요 (${post.likes || 0})</button>`;
+        // ✅ [수정] '좋아요' 버튼 전용 클래스명(btn-like)을 사용하고, 활성화 상태를 is-liked 클래스로 제어합니다.
+        // 페이지 로드 시 서버에서 직접 받아온 'post.isLiked' 값을 사용하여 버튼의 초기 상태를 결정합니다.
+        const hasLiked = post.isLiked;
+        postActionsHTML = `<button id="like-button-${post.id}" class="btn btn-like ${hasLiked ? 'is-liked' : ''}">❤️ 좋아요 (${post.likes || 0})</button>`;
 
         let contentHTML = '';
         
-        // ✅ [수정] content가 순수 문자열이므로, JSON 파싱 없이 바로 표시합니다.
         const escapeHTML = (str) => (str || '').replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
         contentHTML += `<h3 class="template-header">가장 피드백 받고 싶은 점</h3>`;
         contentHTML += `<div class="template-content-box is-question">${escapeHTML(post.content)}</div>`;
@@ -210,13 +190,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             ${actionsHTML}
             ${portfolioLinkHTML}
-            ${fileAttachmentHTML}
             <div class="post-content">
                 ${contentHTML}
             </div>
             <div class="post-actions">
                 ${postActionsHTML}
-                ${bookmarkButtonHTML}
             </div>
             <div class="comment-section">
               <h3 class="comment-title">💬 피드백</h3>
@@ -230,11 +208,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
 
-        // 이벤트 리스너 동적 바인딩
         const authorLink = elements.container.querySelector('.post-author-link');
         if (authorLink) authorLink.addEventListener('click', handleAuthorClick);
 
-        // ✅ [추가] 좋아요 버튼 이벤트 리스너 바인딩
         const likeButton = document.getElementById(`like-button-${post.id}`);
         if (likeButton) {
             likeButton.addEventListener('click', async () => {
@@ -246,36 +222,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
                 try {
-                    // ✅ [개선] 서버에 좋아요 토글을 요청하고, 응답으로 최신 좋아요 수를 받습니다.
                     const response = await app.api.toggleLike(post.id);
                     
-                    const originalLikes = post.likes;
-                    post.likes = response.likes; // 응답 받은 최신 좋아요 수로 업데이트
+                    post.likes = response.likesCount;
+                    post.isLiked = response.isLiked;
 
                     likeButton.textContent = `❤️ 좋아요 (${post.likes || 0})`;
 
-                    // ✅ [수정] 서버 응답 후, 최신 상태를 기준으로 localStorage와 버튼 스타일을 업데이트합니다.
-                    // 서버 응답(좋아요 수)이 이전보다 증가했으면 '좋아요'를 누른 것으로 간주합니다.
-                    let likedPostIds = JSON.parse(localStorage.getItem(`likedPostIds_${currentUser.name}`) || '[]')
-                    const isNowLiked = post.likes > originalLikes;
-                    const postIndex = likedPostIds.indexOf(post.id);
-                    
-                    if (isNowLiked && postIndex === -1) { // '좋아요'를 눌렀고, localStorage에 없다면
-                        likedPostIds.push(post.id); // 배열에 추가
-                        likeButton.classList.add('btn--primary');
-                    } else if (!isNowLiked && postIndex > -1) { // '좋아요'를 취소했고, localStorage에 있다면
-                        likedPostIds.splice(postIndex, 1); // 배열에서 제거
-                        likeButton.classList.remove('btn--primary');
+                    if (post.isLiked) {
+                        // 'is-liked' 클래스를 추가하여 활성화 스타일을 적용합니다.
+                        likeButton.classList.add('is-liked'); 
+                    } else {
+                        // 'is-liked' 클래스를 제거하여 비활성화 스타일을 적용합니다.
+                        likeButton.classList.remove('is-liked'); 
                     }
-
-                    localStorage.setItem(`likedPostIds_${currentUser.name}`, JSON.stringify(likedPostIds));
                 } catch (error) {
                     app.utils.showNotification(error.message || '좋아요 처리에 실패했습니다.', 'danger');
                 }
             });
         }
 
-        // ✅ [추가] 삭제 버튼 이벤트 리스너 바인딩
         const deleteButton = document.getElementById('btn-delete-post');
         if (deleteButton) {
             deleteButton.addEventListener('click', async () => {

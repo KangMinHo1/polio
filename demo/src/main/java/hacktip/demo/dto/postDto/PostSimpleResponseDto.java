@@ -30,7 +30,7 @@ public class PostSimpleResponseDto {
         this.views = post.getViewCount();
         this.createDate = post.getCreateDate();
         this.category = post.getCategory().getCategoryName();
-        this.commentCount = post.getComments().size();
+        this.commentCount = post.getCommentCount(); // [성능 개선] @Formula 필드 사용
         this.likesCount = post.getLikesCount();
 
     }

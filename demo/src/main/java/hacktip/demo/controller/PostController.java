@@ -5,7 +5,6 @@ import hacktip.demo.security.UserDetailsImpl;
 import hacktip.demo.service.CategoryService;
 import hacktip.demo.service.PostService;
 import jakarta.validation.Valid;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,7 +41,7 @@ public class PostController {
      */
     @PostMapping                                                                                        // 2. (보안) 인증된 사용자 이메일
     public ResponseEntity<PostResponseDto> createPost(@Valid @RequestBody PostCreateRequestDto requestDto, @AuthenticationPrincipal UserDetailsImpl userDetails){
-        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
+        String email = userDetails.getUsername();
         PostResponseDto responseDto = postService.createPost(requestDto, email);
 
         // 3. 201 Created 응답과 함께 생성된 게시물 정보 반환
@@ -67,8 +66,13 @@ public class PostController {
      * (누구나)
      */
     @GetMapping("/{postId}")
-    public ResponseEntity<PostResponseDto> getPostById(@PathVariable("postId") Long postId){
-        PostResponseDto responseDto = postService.getPostById(postId);
+    public ResponseEntity<PostResponseDto> getPostById(
+            @PathVariable("postId") Long postId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails // 인증된 사용자 정보, 비로그인 시 null
+    ){
+        // 비로그인 사용자는 email이 null, 로그인 사용자는 자신의 email을 전달
+        String email = (userDetails != null) ? userDetails.getMember().getEmail() : null;
+        PostResponseDto responseDto = postService.getPostById(postId, email);
 
         // 5. 200 OK 응답과 함께 상세 정보 반환
         return ResponseEntity.ok(responseDto);
@@ -80,7 +84,7 @@ public class PostController {
      */
     @PatchMapping("/{postId}")
     public ResponseEntity<PostResponseDto> updatePost(@PathVariable("postId") Long postId, @Valid @RequestBody PostUpdateRequestDto requestDto, @AuthenticationPrincipal UserDetailsImpl userDetails){
-        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
+        String email = userDetails.getUsername();
 
         // 7. (인가) 수정 권한 검사는 Service 계층에서 이미 처리 (AccessDeniedException)
         PostResponseDto responseDto = postService.updatePost(postId, requestDto, email);
@@ -91,11 +95,11 @@ public class PostController {
 
     /**
      * 5. 게시물 삭제 (DELETE /posts/{postId})
-     * (인증된 작성자 본인만)
+     * (인증된 작성자 본인 or 관리자)
      */
     @DeleteMapping("/{postId}")
     public ResponseEntity<String> deletePost(@PathVariable("postId") Long postId, @AuthenticationPrincipal UserDetailsImpl userDetails){
-        String email = userDetails.getUsername(); // UserDetails에서 이메일 추출
+        String email = userDetails.getUsername();
         postService.deletePost(postId, email);
 
         return ResponseEntity.ok("게시물이 삭제되었습니다.");
