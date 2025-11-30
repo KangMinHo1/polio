@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let currentRoomId = null;
     let stompClient = null;
+    let roomSubscription = null; // 현재 방 구독 정보를 저장할 변수
 
     async function initializeChatPage() {
         await renderRoomList();
@@ -95,7 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         msgElement.className = `chat-message ${isMyMessage ? 'my-message' : 'other-message'}`;
         
         msgElement.innerHTML = `
-            <div class="message-meta">${msg.senderName} • ${app.utils.formatDate(msg.sendDate)}</div>
+            <div class="message-meta">${msg.senderName} • ${app.utils.formatDate(new Date(msg.sendDate))}</div>
             <div class="message-content">${msg.content}</div>
         `;
         
@@ -128,8 +129,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function connectAndSubscribe(roomId) {
         if (stompClient && stompClient.connected) {
-            stompClient.unsubscribe(`/topic/room/${currentRoomId}`);
-            subscribeToRoom(roomId);
+            // 이미 연결된 경우, 이전 구독을 해지하고 새 방을 구독합니다.
+            if (roomSubscription) {
+                roomSubscription.unsubscribe();
+            }
+            roomSubscription = subscribeToRoom(roomId);
         } else {
             stompClient = new StompJs.Client({
                 brokerURL: 'ws://localhost:8080/ws-stomp',
@@ -138,7 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 },
                 onConnect: () => {
                     console.log('WebSocket에 연결되었습니다.');
-                    subscribeToRoom(roomId);
+                    roomSubscription = subscribeToRoom(roomId);
                 },
                 onStompError: (frame) => {
                     console.error('Broker reported error: ' + frame.headers['message']);
@@ -155,14 +159,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function subscribeToRoom(roomId) {
         if (stompClient && stompClient.connected) {
-            stompClient.subscribe(`/topic/room/${roomId}`, (message) => {
+            const subscription = stompClient.subscribe(`/topic/room/${roomId}`, (message) => {
                 const receivedMessage = JSON.parse(message.body);
+                // [수정] 웹소켓을 통해 받은 메시지에 sendDate가 없는 경우,
+                // 메시지를 수신한 현재 시각을 기준으로 날짜를 생성하여 사용합니다.
+                if (!receivedMessage.sendDate) {
+                    receivedMessage.sendDate = new Date().toISOString();
+                }
                 if (receivedMessage.roomId === currentRoomId) {
                     renderMessage(receivedMessage);
                     scrollToBottom();
                 }
             });
             console.log(`${roomId}번 방을 구독했습니다.`);
+            return subscription; // 구독 객체 반환
         }
     }
 

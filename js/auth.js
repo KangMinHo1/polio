@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const signupForm = document.getElementById('signupForm');
   if (signupForm) {
     signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
       const name = document.getElementById('name').value;
       const role = document.getElementById('role').value;

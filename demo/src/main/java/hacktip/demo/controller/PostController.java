@@ -71,7 +71,7 @@ public class PostController {
             @AuthenticationPrincipal UserDetailsImpl userDetails // 인증된 사용자 정보, 비로그인 시 null
     ){
         // 비로그인 사용자는 email이 null, 로그인 사용자는 자신의 email을 전달
-        String email = (userDetails != null) ? userDetails.getMember().getEmail() : null;
+        String email = (userDetails != null) ? userDetails.getEmail() : null;
         PostResponseDto responseDto = postService.getPostById(postId, email);
 
         // 5. 200 OK 응답과 함께 상세 정보 반환

@@ -131,14 +131,13 @@ public class MemberService {
 
     //로그인한 회원의 이름과 역할 제공
     public ResponseUserDataDto getCurrentUser(UserDetailsImpl userDetails){
-        Member member = userDetails.getMember();
         // 1. [수정] MemberStack 엔티티 리스트 조회
-        List<MemberStack> memberStackEntities = memberStackRepository.findByMember_MemberId(member.getMemberId());
+        List<MemberStack> memberStackEntities = memberStackRepository.findByMember_MemberId(userDetails.getMemberId());
         // 2. [수정] MemberStack 엔티티 리스트를 MemberStackDto 리스트로 변환
         List<MemberStackDto> memberStackDto = memberStackEntities.stream()
                 .map(MemberStackDto::new)
                 .collect(Collectors.toList());
-        return new ResponseUserDataDto(member.getMemberId(), member.getName(), member.getRole(), memberStackDto);
+        return new ResponseUserDataDto(userDetails.getMemberId(), userDetails.getName(), userDetails.getRole(), memberStackDto);
     }
 
     // 사용자의 이름으로 기술스택 가져오기

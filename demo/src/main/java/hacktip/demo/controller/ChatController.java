@@ -5,35 +5,57 @@ import hacktip.demo.dto.chatDto.ChatMessageResponseDto;
 import hacktip.demo.security.UserDetailsImpl;
 import hacktip.demo.service.ChatService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate; // 1. 메시지 브로드캐스팅을 위한 템플릿
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import java.security.Principal;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 public class ChatController {
 
-    private final ChatService chatService; 
-    private final SimpMessagingTemplate messagingTemplate; // 1. 메시지 브로드캐스팅을 위한 템플릿
+    private final ChatService chatService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    /**
-     * STOMP 메시지 처리 메서드
-     * (Client -> Server)
-     *
-     * @MessageMapping("/chat/send")
-     * - 클라이언트가 "/app/chat/send" 주소로 메시지를 보내면 이 메서드가 호출됩니다.
-     */
     @MessageMapping("/chat/send")
-    //  @AuthenticationPrincipal String email 파라미터 추가
-    public void sendMessage(ChatMessageRequestDto requestDto, @AuthenticationPrincipal UserDetailsImpl userDetails){
-        Long memberId = userDetails.getMemberId(); // [수정] 이메일 대신 memberId 추출
-        // 1. (DB 저장) DTO를 서비스로 넘겨 메시지를 DB에 저장하고, 응답 DTO를 받음  --> (수정) Service 호출 시, DTO와 함께 인증된 이메일 전달
+    // [수정] @AuthenticationPrincipal 대신 Principal(또는 Authentication) 객체를 직접 받습니다.
+    public void sendMessage(ChatMessageRequestDto requestDto, Principal principal) {
+
+        // 1. Principal이 null인지 확인 (인증 자체가 안 된 경우)
+        if (principal == null) {
+            log.error("sendMessage Error: Principal object is NULL. (Not Authenticated)");
+            return;
+        }
+
+        // 2. Principal을 Authentication으로 형변환 후 UserDetailsImpl 꺼내기
+        UsernamePasswordAuthenticationToken authentication = (UsernamePasswordAuthenticationToken) principal;
+        Object principalObject = authentication.getPrincipal();
+
+        Long memberId = null;
+
+        // 3. 타입 확인 후 ID 추출 (가장 안전한 방법)
+        if (principalObject instanceof UserDetailsImpl) {
+            UserDetailsImpl userDetails = (UserDetailsImpl) principalObject;
+            memberId = userDetails.getMemberId();
+            log.info("ChatController - Extracted MemberId: {}", memberId);
+        } else {
+            // 만약 UserDetailsImpl이 아니라면, 여기서 문제 원인을 알 수 있음
+            log.error("ChatController Error: Principal is not UserDetailsImpl. It is: {}", principalObject.getClass().getName());
+        }
+
+        // 4. roomId가 null인지도 확인
+        if (requestDto.getRoomId() == null) {
+            log.error("ChatController Error: Room ID is NULL within the request DTO.");
+        }
+
+        // 5. Service 호출
+        // memberId가 null이면 여기서 또 에러가 나겠지만, 위의 로그로 원인을 확실히 알 수 있음
         ChatMessageResponseDto responseDto = chatService.saveMessage(requestDto, memberId);
 
-        // 2. (브로드캐스팅) 메시지를 해당 채팅방의 구독자들에게 전송
-        //    - "/topic/room/{roomId}" 주소를 구독(subscribe) 중인 클라이언트들에게
-        //      responseDto (저장된 메시지 정보)를 전송합니다.
         messagingTemplate.convertAndSend("/topic/room/" + responseDto.getRoomId(), responseDto);
     }
 }
