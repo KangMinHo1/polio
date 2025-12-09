@@ -1,0 +1,124 @@
+/* ai-tools.html 전용 스타일 */
+
+/* 2단 레이아웃 컨테이너 */
+.ai-layout-container {
+    display: flex;
+    gap: 1.5rem; /* 사이드바와 메인 컨텐츠 사이 간격 */
+    height: 70vh; /* 뷰포트 높이의 70%로 설정 */
+    max-height: 750px; /* 최대 높이 제한 */
+}
+
+/* AI 기능 선택 사이드바 */
+.ai-sidebar {
+    flex: 0 0 280px; /* 너비 280px 고정 */
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+
+.sidebar-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.ai-function-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.ai-function-item {
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.ai-function-item:hover {
+    background-color: var(--bg-secondary);
+}
+
+.ai-function-item.active {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-dark);
+    font-weight: 600;
+}
+
+/* 메인 AI 컨테이너 */
+.ai-main-container {
+    flex-grow: 1; /* 남은 공간 모두 차지 */
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+}
+
+.ai-response-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    background-color: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.message-bubble {
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-lg);
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.message-bubble.ai {
+    background-color: var(--bg-tertiary);
+    align-self: flex-start;
+    border-top-left-radius: 0;
+}
+
+.message-bubble.user {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary-dark);
+    align-self: flex-end;
+    border-top-right-radius: 0;
+}
+
+.message-bubble.error {
+    background-color: var(--color-danger-light);
+    color: var(--color-danger-dark);
+    align-self: flex-start;
+}
+
+.ai-input-form {
+    display: flex;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-light);
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.ai-input-container {
+    flex-grow: 1;
+}
+
+.ai-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    background-color: var(--bg-primary);
+    resize: none;
+    line-height: 1.5;
+}

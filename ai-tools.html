@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tools - HackTip</title>
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/ai-tools.css">
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <main class="main">
+      <div class="container">
+          <div class="page-header">
+              <h1 id="page-title">AI 도구</h1>
+              <p id="page-description">AI를 활용하여 챗봇, 면접 질문 생성, 채용 공고 추천 기능을 사용해보세요.</p>
+          </div>
+
+          <div class="ai-layout-container">
+              <aside class="ai-sidebar card">
+                  <div class="sidebar-header">
+                      <h2>기능 선택</h2>
+                  </div>
+                  <ul id="ai-function-list" class="ai-function-list">
+                      <li class="ai-function-item active" data-function="chatbot">🤖 AI 챗봇</li>
+                      <li class="ai-function-item" data-function="interview">📄 면접 질문 생성</li>
+                      <li class="ai-function-item" data-function="jobs">💼 채용 공고 추천</li>
+                  </ul>
+              </aside>
+
+              <section class="ai-main-container card">
+                  <div id="ai-response-area" class="ai-response-area">
+                      <div class="message-bubble ai">
+                          안녕하세요! 왼쪽에서 원하는 AI 기능을 선택하고 무엇이든 물어보세요.
+                      </div>
+                  </div>
+                  <form id="ai-form" class="ai-input-form">
+                      <div class="ai-input-container">
+                          <textarea id="ai-input" class="ai-input" rows="3" placeholder="메시지를 입력하세요..."></textarea>
+                      </div>
+                      <button type="submit" class="btn btn--primary">전송</button>
+                  </form>
+              </section>
+          </div>
+      </div>
+    </main>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="js/shared.js"></script>
+    <script src="js/layout.js"></script>
+    <script src="js/ai-tools.js"></script>
+</body>
+</html>

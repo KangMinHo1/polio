@@ -62,6 +62,9 @@ public class SecurityConfig {
 
                         .requestMatchers("/chat/**").authenticated()
 
+                        .requestMatchers("/api/bot/chat").authenticated()
+
+
                         .anyRequest().authenticated()
                 )
 
@@ -76,7 +79,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(Arrays.asList("http://192.168.219.107:5500", "http://localhost:5500"));
+        configuration.setAllowedOrigins(Arrays.asList("http://192.168.219.103:5500", "http://localhost:5500", "http://127.0.0.1:5500"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
