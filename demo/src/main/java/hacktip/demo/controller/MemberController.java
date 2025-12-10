@@ -35,6 +35,20 @@ public class MemberController {
                 .body(memberSignUpResponseDto);
     }
 
+    //회원 삭제
+    @DeleteMapping("/members/{memberId}")
+    public ResponseEntity<String> deleteMember(@PathVariable Long memberId, @AuthenticationPrincipal UserDetails userDetails, HttpServletResponse response){
+        UserDetailsImpl authenticatedUser = (UserDetailsImpl) userDetails;
+
+        memberService.deleteMember(memberId, authenticatedUser);
+
+        //계정이 삭제되었으니 브라우저에 남아있는 Refresh Token 쿠키도 삭제
+        if(authenticatedUser.getMemberId().equals(memberId)){
+            expireRefreshTokenCookie(response);
+        }
+
+        return ResponseEntity.ok("회원 탈퇴가 완료되었습니다.");
+    }
 
     //로그인
     @PostMapping("/login")

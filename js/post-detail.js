@@ -177,10 +177,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         postActionsHTML = `<button id="like-button-${post.id}" class="btn btn-like ${hasLiked ? 'is-liked' : ''}">❤️ 좋아요 (${post.likes || 0})</button>`;
 
         let contentHTML = '';
-        
-        const escapeHTML = (str) => (str || '').replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
-        contentHTML += `<h3 class="template-header">가장 피드백 받고 싶은 점</h3>`;
-        contentHTML += `<div class="template-content-box is-question">${escapeHTML(post.content)}</div>`;
+        const escapeHTML = (str) => (str || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+        // 새로운 디자인 적용
+        contentHTML = `
+            <div class="feedback-request-box">
+                <p class="feedback-request-content">${escapeHTML(post.content)}</p>
+            </div>
+        `;
+
 
         elements.container.innerHTML = `
             <h1>${post.title}</h1>
@@ -263,4 +268,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     renderPostDetail();
+
+    // 새로운 디자인을 위한 스타일 동적 추가
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .feedback-request-box {
+            background-color: var(--bg-secondary);
+            border-left: 5px solid var(--color-primary);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            min-height: 120px; /* 최소 높이 지정 */
+        }
+        .feedback-request-content {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            white-space: pre-wrap; /* DB에 저장된 줄바꿈을 그대로 표시 */
+        }
+    `;
+    document.head.appendChild(style);
 });

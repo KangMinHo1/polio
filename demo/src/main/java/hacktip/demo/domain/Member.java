@@ -1,5 +1,6 @@
 package hacktip.demo.domain;
 
+import hacktip.demo.domain.post.Post;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -47,4 +48,8 @@ public class Member {
     @Builder.Default
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MemberStack> memberStacks = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Post> posts = new ArrayList<>();
 }

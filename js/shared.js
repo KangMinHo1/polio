@@ -113,8 +113,15 @@ window.CommunityApp = {
     async fetchAllUsers() {
       return this.request('/api/users');
     },
-    async deleteUser(userName) {
-      return this.request(`/api/admin/users/${userName}`, { method: 'DELETE' });
+    async deleteUser(memberId) { // 응답이 text/plain 이므로 request 헬퍼를 사용하지 않음
+      const response = await fetch(`${this.BASE_URL}/api/members/${memberId}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
+      if (!response.ok) {
+        throw new Error('회원 삭제에 실패했습니다.');
+      }
+      return response.text();
     },
     async updateUserRole(userName, newRole) {
       return this.request(`/api/admin/users/${userName}/role`, { method: 'PATCH', body: JSON.stringify({ role: newRole }) });

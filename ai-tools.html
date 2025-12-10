@@ -7,6 +7,48 @@
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/ai-tools.css">
+    <style>
+        /* AI 도구 입력 폼 레이아웃 개선 */
+        .ai-input-form {
+            /* 입력 필드와 전송 버튼을 하단에 정렬 */
+            align-items: flex-end;
+        }
+
+        #ai-input-area {
+            flex-grow: 1; /* 입력 영역이 남은 공간을 모두 차지하도록 */
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        /* 면접 질문 생성기 폼 컨테이너 */
+        #interview-inputs {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        /* 직무, 경력, 질문 개수 등 한 줄에 표시되는 입력 그룹 */
+        #interview-inputs .form-group-inline {
+            display: flex;
+            flex-wrap: wrap; /* 화면이 좁아지면 다음 줄로 */
+            gap: 0.75rem;
+        }
+
+        /* 한 줄 입력 그룹 내의 각 입력 필드 */
+        #interview-inputs .form-group-inline > .form-input {
+            flex: 1; /* 공간을 유연하게 차지 */
+            min-width: 150px; /* 최소 너비 지정 */
+        }
+
+        /* 질문 개수 입력 필드는 너비를 작게 조정 */
+        #interview-inputs #interview-question-count {
+            flex: 0 1 90px; /* 너비 90px, 축소 가능 */
+            min-width: 70px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
     <div id="header-placeholder"></div>
@@ -26,7 +68,6 @@
                   <ul id="ai-function-list" class="ai-function-list">
                       <li class="ai-function-item active" data-function="chatbot">🤖 AI 챗봇</li>
                       <li class="ai-function-item" data-function="interview">📄 면접 질문 생성</li>
-                      <li class="ai-function-item" data-function="jobs">💼 채용 공고 추천</li>
                   </ul>
               </aside>
 
@@ -37,8 +78,8 @@
                       </div>
                   </div>
                   <form id="ai-form" class="ai-input-form">
-                      <div class="ai-input-container">
-                          <textarea id="ai-input" class="ai-input" rows="3" placeholder="메시지를 입력하세요..."></textarea>
+                      <div id="ai-input-area">
+                          <textarea id="ai-input" class="form-input" rows="3" placeholder="메시지를 입력하세요..."></textarea>
                       </div>
                       <button type="submit" class="btn btn--primary">전송</button>
                   </form>

@@ -74,6 +74,27 @@ public class MemberService {
         return new MemberSignUpResponseDto(savedMember.getMemberId(), savedMember.getEmail(), savedMember.getName());
     }
 
+    //회원 탈퇴
+    @Transactional
+    public void deleteMember(Long memberId, UserDetailsImpl requester){
+
+        Member targetMember = memberRepository.findById(memberId).
+                orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        boolean isAdmin = requester.getRole().equals(Role.ADMIN);
+        boolean isSelf = requester.getMemberId().equals(memberId);
+
+        if(!isAdmin && !isSelf){// 본인도 아니고 관리자도 아니면
+            throw new IllegalArgumentException("삭제 권한이 없습니다.");
+        }
+
+        //삭제 대상의 리프레시 토큰이 DB에 있으면 삭제
+        refreshTokenRepository.findById(targetMember.getEmail())
+                .ifPresent(refreshTokenRepository::delete);
+
+        memberRepository.delete(targetMember);
+    }
+
     /**
      * 로그인 처리 (AT, RT 생성 및 RT 저장)
      * @param request 로그인 요청 DTO

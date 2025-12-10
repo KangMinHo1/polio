@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="item-meta">(${user.role})</div>
         </div>
         <div class="item-actions">
-          <button class="btn btn--danger btn-delete-user" data-user-name="${user.name}" style="margin-left: 0.5rem;">
+          <button class="btn btn--danger btn-delete-user" data-user-id="${user.id}" data-user-name="${user.name}" style="margin-left: 0.5rem;">
             삭제
           </button>
         </div>
@@ -105,10 +105,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function handleDeleteUser(e) {
+    const userId = e.target.dataset.userId;
     const userName = e.target.dataset.userName;
     if (confirm(`정말로 '${userName}' 사용자를 삭제하시겠습니까?\n이 사용자가 작성한 모든 게시글과 댓글이 함께 삭제됩니다.`)) {
       try {
-        await app.api.deleteUser(userName);
+        await app.api.deleteUser(userId);
         app.utils.showNotification('사용자가 삭제되었습니다.', 'success');
         await app.initialize();
         initializeAdminPage();

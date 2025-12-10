@@ -56,6 +56,7 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.POST, "/api/posts/{postId}/comments").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/comments/{commentId}").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/members/{memberId}").authenticated()
 
                         .requestMatchers(HttpMethod.PUT, "/api/members/me/stacks").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/members/{userName}/stacks").authenticated()
@@ -63,7 +64,7 @@ public class SecurityConfig {
                         .requestMatchers("/chat/**").authenticated()
 
                         .requestMatchers("/api/bot/chat").authenticated()
-
+                        .requestMatchers("/api/bot/questions").authenticated()
 
                         .anyRequest().authenticated()
                 )

@@ -100,13 +100,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function handleDeleteAccount() {
         if (confirm('정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) { 
-            // ✅ user.name -> user.id
-            const currentUser = app.state.user.id; 
-            await app.api.deleteUser(currentUser); 
+            const currentUserId = app.state.user.id; 
+            const responseMessage = await app.api.deleteUser(currentUserId); 
             localStorage.removeItem('user'); 
             app.state.user = null; 
-            app.utils.showNotification('계정이 삭제되었습니다. 이용해주셔서 감사합니다.', 'success'); 
-            setTimeout(() => { window.location.href = 'mainview.html'; }, 2000); 
+            app.utils.showNotification(responseMessage, 'success'); 
+            setTimeout(() => { window.location.href = 'mainview.html'; }, 0); 
         }
     }
     

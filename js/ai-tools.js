@@ -17,14 +17,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         aiForm: document.getElementById('ai-form'),
         functionList: document.getElementById('ai-function-list'),
         responseArea: document.getElementById('ai-response-area'),
-        aiInput: document.getElementById('ai-input'),
+        aiInputArea: document.getElementById('ai-input-area'), // 입력 영역 컨테이너
     };
 
     const placeholders = {
         chatbot: "메시지를 입력하세요...",
         interview: "예: Spring Boot, JPA, React를 사용한 쇼핑몰 프로젝트 경험이 있습니다. 백엔드 개발자 직무에 지원합니다.",
-        jobs: "예: 자바, Spring Boot, 3년차 백엔드 개발자, 금융권 희망",
     };
+
+    // 면접 질문 생성기 전용 입력 폼 HTML
+    const interviewFormHTML = `
+        <div id="interview-inputs">
+            <div class="form-group-inline">
+                <input type="text" id="interview-job-role" class="form-input" placeholder="희망 직무 (예: 백엔드 개발자)">
+                <select id="interview-career-level" class="form-input">
+                    <option value="신입">신입</option>
+                    <option value="주니어 (1~3년차)">주니어 (1~3년차)</option>
+                    <option value="시니어 (5년차 이상)">시니어 (5년차 이상)</option>
+                </select>
+                <input type="number" id="interview-question-count" class="form-input" value="5" min="1" max="10">
+            </div>
+            <div class="form-group">
+                <textarea id="interview-tech-stack" class="form-input" rows="3" placeholder="주요 기술 스택과 프로젝트 경험을 자유롭게 작성해주세요.\n예: Spring Boot, JPA, React를 사용한 쇼핑몰 프로젝트 경험이 있습니다."></textarea>
+            </div>
+        </div>
+    `;
+
+    // 기본 챗봇 입력 폼 HTML
+    const chatbotFormHTML = `
+        <textarea id="ai-input" class="form-input" rows="3" placeholder="메시지를 입력하세요..."></textarea>
+    `;
+
+    // 현재 선택된 기능을 추적하는 변수
+    let currentFunction = 'chatbot';
 
     function setupEventListeners() {
         // AI 기능 선택 시
@@ -35,14 +60,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 활성 클래스 업데이트
                 elements.functionList.querySelectorAll('.ai-function-item').forEach(item => item.classList.remove('active'));
                 e.target.classList.add('active');
+                currentFunction = selectedFunction;
 
-                // 입력창 플레이스홀더 변경
-                elements.aiInput.placeholder = placeholders[selectedFunction] || "메시지를 입력하세요...";
+                // 기능에 따라 입력 폼 변경
+                if (selectedFunction === 'interview') {
+                    elements.aiInputArea.innerHTML = interviewFormHTML;
+                } else {
+                    elements.aiInputArea.innerHTML = chatbotFormHTML;
+                }
 
                 // 대화 내용 초기화
                 elements.responseArea.innerHTML = `
                     <div class="message-bubble ai">
-                        안녕하세요! [${e.target.textContent.trim()}] 기능이 선택되었습니다. 무엇을 도와드릴까요?
+                        안녕하세요! <strong>[${e.target.textContent.trim()}]</strong> 기능이 선택되었습니다. 무엇을 도와드릴까요?
                     </div>`;
             }
         });
@@ -53,6 +83,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 메시지 버블을 화면에 추가하는 함수
     function appendMessage(container, text, sender = 'ai') {
+        if (!container) return;
+
         // 첫 번째 메시지가 기본 안내 메시지일 경우, 화면을 클리어
         if (container.children.length === 1 && container.querySelector('.message-bubble.ai')) {
             const initialMessage = "안녕하세요! 왼쪽에서 원하는 AI 기능을 선택하고 무엇이든 물어보세요.";
@@ -87,53 +119,90 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    async function handleChatbotSubmit() {
+        const inputEl = document.getElementById('ai-input');
+        const query = inputEl.value.trim();
+        if (!query) return;
+
+        appendMessage(elements.responseArea, query, 'user');
+        inputEl.value = '';
+        showLoading(elements.responseArea);
+
+        try {
+            const response = await fetch(`${app.api.BASE_URL}/api/bot/chat`, {
+                method: 'POST',
+                headers: {
+                    ...app.api.getAuthHeaders(),
+                    'Content-Type': 'text/plain' // 서버에서 String으로 받으므로 text/plain으로 설정
+                },
+                body: query // JSON.stringify 없이 문자열 그대로 전송
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const answer = await response.text(); // 응답을 텍스트로 받음
+            hideLoading();
+            appendMessage(elements.responseArea, answer, 'ai');
+
+        } catch (error) {
+            hideLoading();
+            appendMessage(elements.responseArea, '죄송합니다. 챗봇 응답을 가져오는 데 실패했습니다.', 'ai error');
+            console.error('Chatbot API error:', error);
+        }
+    }
+
+    async function handleInterviewSubmit() {
+        const jobRole = document.getElementById('interview-job-role').value.trim();
+        const techStack = document.getElementById('interview-tech-stack').value.trim();
+
+        if (!jobRole || !techStack) {
+            app.utils.showNotification('희망 직무와 기술 스택을 모두 입력해주세요.', 'warning');
+            return;
+        }
+
+        const requestDto = {
+            jobRole: jobRole,
+            careerLevel: document.getElementById('interview-career-level').value,
+            techStack: techStack,
+            questionCount: parseInt(document.getElementById('interview-question-count').value, 10)
+        };
+
+        const userQueryText = `<strong>[면접 질문 생성 요청]</strong><br><strong>직무:</strong> ${requestDto.jobRole}<br><strong>경력:</strong> ${requestDto.careerLevel}<br><strong>기술/경험:</strong> ${requestDto.techStack}`;
+        appendMessage(elements.responseArea, userQueryText, 'user');
+        showLoading(elements.responseArea);
+
+        try {
+            const response = await fetch(`${app.api.BASE_URL}/api/bot/questions`, {
+                method: 'POST',
+                headers: app.api.getAuthHeaders(),
+                body: JSON.stringify(requestDto)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const questions = await response.text();
+            hideLoading();
+            appendMessage(elements.responseArea, questions, 'ai');
+
+        } catch (error) {
+            hideLoading();
+            appendMessage(elements.responseArea, '죄송합니다. 면접 질문을 생성하는 데 실패했습니다.', 'ai error');
+            console.error('Interview question API error:', error);
+        }
+    }
+
     // 통합 폼 제출 처리
     async function handleFormSubmit(e) {
         e.preventDefault();
-        const query = elements.aiInput.value.trim();
-        if (!query) return;
-
-        const selectedFunction = elements.functionList.querySelector('.ai-function-item.active').dataset.function;
-
-        // 사용자 메시지 표시
-        appendMessage(elements.responseArea, query, 'user');
-        elements.aiInput.value = '';
-
-        // 로딩 인디케이터 표시
-        showLoading(elements.responseArea);
-
-        if (selectedFunction === 'chatbot') {
-            // 챗봇 기능: 텍스트 기반 API 호출
-            try {
-                const response = await fetch(`${app.api.BASE_URL}/api/bot/chat`, {
-                    method: 'POST',
-                    headers: {
-                        ...app.api.getAuthHeaders(),
-                        'Content-Type': 'text/plain' // 서버에서 String으로 받으므로 text/plain으로 설정
-                    },
-                    body: query // JSON.stringify 없이 문자열 그대로 전송
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const answer = await response.text(); // 응답을 텍스트로 받음
-                hideLoading();
-                appendMessage(elements.responseArea, answer, 'ai');
-
-            } catch (error) {
-                hideLoading();
-                appendMessage(elements.responseArea, '죄송합니다. 챗봇 응답을 가져오는 데 실패했습니다.', 'ai error');
-                console.error('Chatbot API error:', error);
-            }
-        } else {
-            // 다른 기능들은 아직 개발 중이므로 가짜 응답 처리
-            setTimeout(() => {
-                hideLoading();
-                const fakeResponse = `이것은 "${query}"에 대한 AI의 가상 응답입니다. [${selectedFunction}] 기능은 현재 개발 중입니다.`;
-                appendMessage(elements.responseArea, fakeResponse, 'ai');
-            }, 1000);
+        
+        if (currentFunction === 'chatbot') {
+            await handleChatbotSubmit();
+        } else if (currentFunction === 'interview') {
+            await handleInterviewSubmit();
         }
     }
 
