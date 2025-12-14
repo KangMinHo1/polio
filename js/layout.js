@@ -119,6 +119,5 @@ window.APP_INITIALIZATION = (async () => {
     });
   }
 
-  initializeNotificationBell();
-
+  // initializeNotificationBell(); // notification.js에서 처리하므로 중복 실행 방지
 })();

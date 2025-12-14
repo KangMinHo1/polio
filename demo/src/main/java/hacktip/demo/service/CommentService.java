@@ -26,6 +26,7 @@ public class CommentService {
     private final PostCommentRepository commentRepository;
     private final PostRepository postRepository;
     private final MemberRepository memberRepository; // 작성자 정보를 위해 MemberRepository 주입
+    private final NotificationService notificationService; //알림 서비스 주입
 
     @GetMapping
     public List<CommentResponseDto>findAll(){
@@ -64,16 +65,25 @@ public class CommentService {
     public Long createComment(Long postId, String email, CommentRequestDto requestDto) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 ID의 게시글을 찾을 수 없습니다: " + postId));
-        Member member = memberRepository.findByEmail(email)
+        Member commenter = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("해당 이메일의 회원을 찾을 수 없습니다: " + email));
 
         PostComment comment = PostComment.builder()
                 .post(post)
-                .member(member)
+                .member(commenter)
                 .contents(requestDto.getContents())
                 .build();
 
         PostComment savedComment = commentRepository.save(comment);
+
+        // [추가] 알림 생성 로직
+        // 게시글 작성자와 댓글 작성자가 다를 경우에만 알림 발송
+        Member postWriter = post.getMember();
+        if (!postWriter.getMemberId().equals(commenter.getMemberId())) {
+            String message = commenter.getName() + "님이 회원님의 게시글에 댓글을 남겼습니다.";
+            notificationService.send(postWriter, post, message);
+        }
+
         return savedComment.getCommentId();
     }
 

@@ -5,7 +5,8 @@ BEGIN
     FOR t IN (
         SELECT table_name FROM user_tables 
         WHERE table_name IN (
-            -- [수정] POST_CATEGORY도 확실히 삭제 목록에 포함
+            -- [수정] NOTIFICATION 테이블 추가
+            'NOTIFICATION', 
             'POST_CATEGORY', 'CATEGORY',
             'MEMBER_STACK', 'TECH_STACK',
             'POST_LIKES', 'POST_COMMENT', 'POST', 
@@ -242,3 +243,30 @@ CREATE TABLE REFRESH_TOKENS (
     TOKEN_VALUE VARCHAR2(512) NOT NULL, 
     CONSTRAINT PK_REFRESH_TOKENS PRIMARY KEY (USER_EMAIL)
 );
+
+------------------------------------------------------------
+-- 10. NOTIFICATION 테이블 (신규 추가)
+------------------------------------------------------------
+CREATE TABLE NOTIFICATION (
+    NOTIFICATION_ID NUMBER PRIMARY KEY,
+    RECEIVER_ID     NUMBER NOT NULL,
+    POST_ID         NUMBER NOT NULL,
+    MESSAGE         VARCHAR2(255 CHAR) NOT NULL,
+    IS_READ         NUMBER(1,0) DEFAULT 0 NOT NULL, -- 0: 안읽음, 1: 읽음
+    CREATED_DATE    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- 외래키 제약조건 (회원 삭제 시, 글 삭제 시 알림도 자동 삭제)
+    CONSTRAINT fk_noti_receiver FOREIGN KEY (RECEIVER_ID) REFERENCES MEMBERS(MemberId) ON DELETE CASCADE,
+    CONSTRAINT fk_noti_post FOREIGN KEY (POST_ID) REFERENCES POST(PostId) ON DELETE CASCADE
+);
+
+CREATE SEQUENCE SEQ_NOTI START WITH 1 INCREMENT BY 1;
+
+CREATE OR REPLACE TRIGGER TRG_NOTI_ID
+BEFORE INSERT ON NOTIFICATION
+FOR EACH ROW
+WHEN (NEW.NOTIFICATION_ID IS NULL)
+BEGIN
+    SELECT SEQ_NOTI.NEXTVAL INTO :NEW.NOTIFICATION_ID FROM DUAL;
+END;
+/

@@ -207,6 +207,12 @@ window.CommunityApp = {
     async getPostStatsByCategory() {
       return this.request('/api/stats/posts-by-category');
     }
+    ,async fetchNotifications() {
+      return this.request('/api/notifications');
+    }
+    ,async readNotification(notificationId) {
+      return this.request(`/api/notifications/${notificationId}/read`, { method: 'POST' });
+    }
     ,async fetchMyChatRooms() {
       return this.request('/chat/rooms');
     }
